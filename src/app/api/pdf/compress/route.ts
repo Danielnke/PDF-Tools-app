@@ -1,14 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { PDFDocument } from 'pdf-lib';
 
-const execAsync = promisify(exec);
+interface CompressionConfig {
+  imageQuality: number;
+  maxImageDimension: number;
+  removeMetadata: boolean;
+  subsetFonts: boolean;
+  compressionLevel: number;
+  pageScaling: number;
+}
+
+interface CompressionResult {
+  originalSize: number;
+  compressedSize: number;
+  compressionRatio: number;
+  techniquesApplied: string[];
+}
+
+import { PDFCompressionService } from '@/lib/pdfCompression';
 
 export async function POST(request: NextRequest) {
+  let outputDir: string | null = null;
+  
   try {
     const { filePath, quality } = await request.json();
 
@@ -19,75 +36,98 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For compression, we'll use Ghostscript if available, otherwise basic optimization
-    const outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
+    // Validate quality parameter
+    if (!['low', 'medium', 'high'].includes(quality)) {
+      return NextResponse.json(
+        { error: 'Quality must be one of: low, medium, high' },
+        { status: 400 }
+      );
+    }
+
+    outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
     
     const outputPath = join(outputDir, `compressed-${uuidv4()}.pdf`);
 
     try {
-      // Try using Ghostscript for compression
-      const qualitySettings = {
-        low: '/screen',
-        medium: '/ebook',
-        high: '/printer',
-        default: '/ebook',
-      };
+      // Use the new PDFCompressionService for pure pdf-lib compression
+      const compressionService = new PDFCompressionService();
+      const fileBytes = await readFile(filePath);
+      
+      // Validate PDF before processing
+      const isValid = await compressionService.validatePDF(fileBytes);
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Invalid or corrupted PDF file' },
+          { status: 400 }
+        );
+      }
 
-      const gsCommand = `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${qualitySettings[quality as keyof typeof qualitySettings] || qualitySettings.default} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${filePath}"`;
-      
-      await execAsync(gsCommand);
-      
-      // Read the compressed file
-      const compressedBytes = await readFile(outputPath);
-      const originalBytes = await readFile(filePath);
-      
-      const compressionRatio = ((originalBytes.length - compressedBytes.length) / originalBytes.length * 100).toFixed(2);
+      // Compress using quality-based settings
+      const { compressedBytes, result } = await compressionService.compressPDF(fileBytes, {
+        quality: quality as 'low' | 'medium' | 'high',
+        preserveMetadata: false,
+        subsetFonts: true,
+      });
+
+      await writeFile(outputPath, compressedBytes);
 
       return NextResponse.json({
         message: 'PDF compressed successfully',
         fileName: `compressed-${uuidv4()}.pdf`,
         filePath: outputPath,
-        originalSize: originalBytes.length,
-        compressedSize: compressedBytes.length,
-        compressionRatio: `${compressionRatio}%`,
-        downloadUrl: `/api/download/${outputPath.split('/').pop()}`,
+        originalSize: result.originalSize,
+        compressedSize: result.compressedSize,
+        compressionRatio: `${result.compressionRatio.toFixed(2)}%`,
+        downloadUrl: `/api/download/${result.compressionRatio.toFixed(2)}%.pdf`,
+        qualityLevel: result.qualityLevel,
+        techniquesApplied: result.techniquesApplied,
+        processingTime: result.processingTime,
       });
 
-    } catch (gsError) {
-      console.warn('Ghostscript not available, falling back to basic PDF optimization');
-      
-      // Fallback: Basic PDF optimization using pdf-lib
-      const { PDFDocument } = await import('pdf-lib');
-      const fileBytes = await readFile(filePath);
-      const pdf = await PDFDocument.load(fileBytes);
-      
-      // Basic optimization: remove unused objects and compress streams
-      const optimizedBytes = await pdf.save({
-        useObjectStreams: true,
-        addDefaultPage: false,
-      });
-
-      await writeFile(outputPath, optimizedBytes);
-      
-      const originalBytes = await readFile(filePath);
-      const compressionRatio = ((originalBytes.length - optimizedBytes.length) / originalBytes.length * 100).toFixed(2);
-
-      return NextResponse.json({
-        message: 'PDF optimized successfully',
-        fileName: `optimized-${uuidv4()}.pdf`,
-        filePath: outputPath,
-        originalSize: originalBytes.length,
-        compressedSize: optimizedBytes.length,
-        compressionRatio: `${compressionRatio}%`,
-        downloadUrl: `/api/download/${outputPath.split('/').pop()}`,
-      });
+    } catch (compressionError) {
+        console.error('Error compressing PDF:', compressionError);
+        
+        // Cleanup on error
+        if (outputDir) {
+          try {
+            await rm(outputDir, { recursive: true, force: true });
+          } catch (cleanupError) {
+            console.warn('Error cleaning up temporary directory:', cleanupError);
+          }
+        }
+        
+        // Provide detailed error messages based on error type
+        let errorMessage = 'Failed to compress PDF';
+        let statusCode = 500;
+        
+        if (compressionError instanceof Error) {
+          const error = compressionError as Error;
+          
+          if (error.message.includes('password') || error.message.includes('encrypted')) {
+            errorMessage = 'Cannot compress password-protected PDF';
+            statusCode = 400;
+          } else if (error.message.includes('corrupt') || error.message.includes('invalid')) {
+            errorMessage = 'Invalid or corrupted PDF file';
+            statusCode = 400;
+          } else if (error.message.includes('memory') || error.message.includes('size')) {
+            errorMessage = 'PDF file is too large to process';
+            statusCode = 413;
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: statusCode }
+        );
     }
-
   } catch (error) {
-    console.error('Compression error:', error);
+    console.error('Error in compression API:', error);
+    
     return NextResponse.json(
-      { error: 'Failed to compress PDF' },
+      { error: 'Internal server error during compression' },
       { status: 500 }
     );
   }

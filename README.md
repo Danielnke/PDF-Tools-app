@@ -6,11 +6,42 @@ A modern, web-based PDF utility application built with Next.js 15 and React 19. 
 
 - **📄 PDF Merge**: Combine multiple PDF files into a single document
 - **✂️ PDF Split**: Extract specific pages or ranges from PDF files
-- **🗜️ PDF Compress**: Reduce file size while maintaining quality
+- **🗜️ PDF Compress**: Reduce file size with Stirling-PDF inspired reliable compression
 - **📁 Drag & Drop**: Intuitive file upload with drag-and-drop support
 - **💾 Instant Download**: Process and download files immediately
 - **🌙 Modern UI**: Clean, responsive design with dark theme support
-- **🔒 Privacy First**: All processing happens client-side - no files stored on server
+- **🔒 Reliability First**: Server-side processing with no external dependencies
+- **📊 Three Quality Levels**: Low, medium, and high compression options
+
+## 🔧 Technical Details
+
+### Compression Strategy
+Our PDF compression implements a **Stirling-PDF inspired reliable approach**:
+
+- **Pure pdf-lib**: No Ghostscript or external dependencies
+- **Progressive Enhancement**: Automatic metadata removal for better ratios
+- **Type Safety**: Full TypeScript implementation
+- **Three Quality Levels**: 
+  - `low`: Maximum compression with object streams
+  - `medium`: Balanced compression/quality
+  - `high`: High quality with minimal artifacts
+
+### API Endpoints
+
+#### Compress PDF
+```typescript
+POST /api/pdf/compress
+{
+  "filePath": "path/to/file.pdf",
+  "quality": "low" | "medium" | "high"
+}
+```
+
+#### Upload File
+```typescript
+POST /api/upload
+// multipart/form-data
+```
 
 ## 🚀 Quick Start
 

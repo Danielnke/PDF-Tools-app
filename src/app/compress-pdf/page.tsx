@@ -32,17 +32,23 @@ export default function CompressPdfPage() {
   const [file, setFile] = useState<UploadedFile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
   const [result, setResult] = useState<CompressResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadDir, setUploadDir] = useState<string>('');
   const [compressionLevel, setCompressionLevel] = useState<'low' | 'medium' | 'high'>('medium');
+  const [isValidating, setIsValidating] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setError(null);
     setResult(null);
+    setProcessingProgress(0);
+    setProgressMessage('');
+    setIsValidating(true);
     
     if (acceptedFiles.length !== 1) {
       setError('Please upload exactly one PDF file');
+      setIsValidating(false);
       return;
     }
 
@@ -50,6 +56,8 @@ export default function CompressPdfPage() {
     
     // Validate file
     const validation = await pdfApi.validateFiles([fileToUpload], 'compress');
+    setIsValidating(false);
+    
     if (!validation.valid) {
       setError(validation.errors.join(', '));
       return;
@@ -70,7 +78,13 @@ export default function CompressPdfPage() {
     setFile(newFile);
 
     try {
+      // Simulate upload progress
+      const uploadProgress = setInterval(() => {
+        setFile(prev => prev ? { ...prev, progress: Math.min(prev.progress + 20, 90) } : null);
+      }, 200);
+
       const uploadResult = await pdfApi.uploadFiles([fileToUpload]);
+      clearInterval(uploadProgress);
 
       if (uploadResult.success && uploadResult.data?.files[0]) {
           const uploadedFile = uploadResult.data.files[0];
@@ -103,13 +117,38 @@ export default function CompressPdfPage() {
 
     setIsProcessing(true);
     setProcessingProgress(0);
+    setProgressMessage('Initializing...');
     setError(null);
+
+    // Simulate progress updates
+    const progressSteps = [
+      { progress: 10, message: 'Starting compression...' },
+      { progress: 30, message: 'Analyzing PDF structure...' },
+      { progress: 60, message: 'Compressing images...' },
+      { progress: 80, message: 'Optimizing content...' },
+      { progress: 95, message: 'Finalizing...' },
+    ];
+
+    let currentStep = 0;
+    const progressInterval = setInterval(() => {
+      if (currentStep < progressSteps.length) {
+        setProcessingProgress(progressSteps[currentStep].progress);
+        setProgressMessage(progressSteps[currentStep].message);
+        currentStep++;
+      } else {
+        clearInterval(progressInterval);
+      }
+    }, 1000);
 
     try {
       const result = await pdfApi.compressPdf({
         filePath: `${uploadDir}/${file.fileName}`,
         quality: compressionLevel,
       });
+
+      clearInterval(progressInterval);
+      setProcessingProgress(100);
+      setProgressMessage('Compression completed!');
 
       if (result.success && result.data) {
         setResult({
@@ -123,6 +162,7 @@ export default function CompressPdfPage() {
         setError(result.error || 'Failed to compress PDF');
       }
     } catch (err) {
+      clearInterval(progressInterval);
       setError('Processing failed. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -143,6 +183,7 @@ export default function CompressPdfPage() {
     setResult(null);
     setError(null);
     setProcessingProgress(0);
+    setProgressMessage('');
     setIsProcessing(false);
   };
 
@@ -150,6 +191,8 @@ export default function CompressPdfPage() {
     setFile(null);
     setResult(null);
     setError(null);
+    setProcessingProgress(0);
+    setProgressMessage('');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -188,16 +231,19 @@ export default function CompressPdfPage() {
                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                     isDragActive
                       ? 'border-primary bg-primary/5'
+                      : isValidating
+                      ? 'border-yellow-500 bg-yellow-50'
                       : 'border-border hover:border-primary/60'
                   }`}
                 >
                   <input {...getInputProps()} />
                   <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium mb-2">
-                    {isDragActive ? 'Drop PDF here' : 'Drag & drop PDF here'}
+                    {isValidating ? 'Validating file...' : 
+                     isDragActive ? 'Drop PDF here' : 'Drag & drop PDF here'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    or click to select file
+                    {isValidating ? 'Checking file format and size...' : 'or click to select file'}
                   </p>
                 </div>
               )}
@@ -235,34 +281,51 @@ export default function CompressPdfPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-2">
-                          Compression Level
+                          Compression Quality
                         </label>
                         <div className="grid grid-cols-3 gap-2">
                           <Button
                             variant={compressionLevel === 'low' ? 'default' : 'outline'}
                             onClick={() => setCompressionLevel('low')}
-                            className="text-sm"
+                            className="w-full"
+                            disabled={isProcessing}
                           >
-                            Low
+                            <div className="text-center">
+                              <div className="font-medium">Low</div>
+                              <div className="text-xs">90% quality</div>
+                            </div>
                           </Button>
                           <Button
                             variant={compressionLevel === 'medium' ? 'default' : 'outline'}
                             onClick={() => setCompressionLevel('medium')}
-                            className="text-sm"
+                            className="w-full"
+                            disabled={isProcessing}
                           >
-                            Medium
+                            <div className="text-center">
+                              <div className="font-medium">Medium</div>
+                              <div className="text-xs">75% quality</div>
+                            </div>
                           </Button>
                           <Button
                             variant={compressionLevel === 'high' ? 'default' : 'outline'}
                             onClick={() => setCompressionLevel('high')}
-                            className="text-sm"
+                            className="w-full"
+                            disabled={isProcessing}
                           >
-                            High
+                            <div className="text-center">
+                              <div className="font-medium">High</div>
+                              <div className="text-xs">50% quality</div>
+                            </div>
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Higher compression = smaller file size, potentially lower quality
-                        </p>
+                        <div className="mt-3 p-3 bg-muted rounded-md">
+                          <p className="text-sm font-medium mb-1">Quality Details:</p>
+                          <ul className="text-xs text-muted-foreground space-y-1">
+                            <li>• <strong>Low:</strong> Minimal compression, preserves original quality</li>
+                            <li>• <strong>Medium:</strong> Balanced compression with font subsetting</li>
+                            <li>• <strong>High:</strong> Maximum compression with image optimization</li>
+                          </ul>
+                        </div>
                       </div>
 
                       <Button
@@ -281,7 +344,7 @@ export default function CompressPdfPage() {
                 <div className="space-y-2">
                   <Progress value={processingProgress} />
                   <p className="text-sm text-center text-muted-foreground">
-                    Processing... {processingProgress}%
+                    {progressMessage} {processingProgress}%
                   </p>
                 </div>
               )}
@@ -302,17 +365,48 @@ export default function CompressPdfPage() {
                     </AlertDescription>
                   </Alert>
 
-                  <div className="space-y-2">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-card p-3 rounded-md border">
+                        <div className="text-sm text-muted-foreground">Original Size</div>
+                        <div className="text-lg font-bold">{formatFileSize(result.originalSize)}</div>
+                      </div>
+                      <div className="bg-card p-3 rounded-md border">
+                        <div className="text-sm text-muted-foreground">Compressed Size</div>
+                        <div className="text-lg font-bold">{formatFileSize(result.compressedSize)}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-card p-3 rounded-md border">
+                      <div className="text-sm text-muted-foreground">Compression Achieved</div>
+                      <div className="text-2xl font-bold text-green-600">{result.compressionRatio}</div>
+                    </div>
+
+                    {(result as any).techniquesApplied && (
+                      <div className="bg-card p-3 rounded-md border">
+                        <div className="text-sm font-medium mb-2">Techniques Applied:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {(result as any).techniquesApplied.map((technique: string, index: number) => (
+                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                              {technique.replace('-', ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(result as any).processingTime && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        Processed in {(result as any).processingTime}ms
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between p-3 bg-card border border-border rounded-lg">
                       <div>
                         <p className="font-medium">{result.fileName}</p>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>Original: {formatFileSize(result.originalSize)}</p>
-                          <p>Compressed: {formatFileSize(result.compressedSize)}</p>
-                          <p className="text-accent">
-                            Saved: {formatFileSize(result.originalSize - result.compressedSize)} ({Math.round(parseFloat(result.compressionRatio))}%)
-                          </p>
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Saved {formatFileSize(result.originalSize - result.compressedSize)} ({Math.round(parseFloat(result.compressionRatio))}%)
+                        </p>
                       </div>
                       <Button
                         size="sm"

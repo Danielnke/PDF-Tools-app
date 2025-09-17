@@ -19,9 +19,10 @@ The application follows a modern Next.js architecture with both client-side and 
 ```
 
 ### Processing Strategy
-- **Small files (< 10MB)**: Client-side processing using pdf-lib
-- **Large files (> 10MB)**: Server-side processing with pdf-poppler
-- **Hybrid approach**: Start client-side, fallback to server-side if needed
+- **Server-side processing**: All compression handled server-side using pdf-lib
+- **File Size**: Up to 100MB supported
+- **Reliability**: No external dependencies, pure TypeScript implementation
+- **Compression Quality**: Three levels (low, medium, high) with progressive enhancement
 
 ## 🔧 Core Components Specification
 
@@ -54,6 +55,30 @@ interface DragDropZoneProps {
 
 ### 2. PDF Processing Engine
 
+#### Compression Strategy
+The compression system implements a **Stirling-PDF inspired reliable compression approach** using pure pdf-lib with progressive fallbacks:
+
+**Compression Algorithm:**
+- **Quality Levels**: low, medium, high (not numeric)
+- **Primary Method**: pdf-lib with optimized SaveOptions
+- **Fallback Strategy**: Metadata removal if compression ratio < 10%
+- **Progressive Enhancement**: Automatic fallback without external dependencies
+
+**Compression Parameters:**
+```typescript
+interface CompressionSettings {
+  useObjectStreams: true;    // Enable object stream compression
+  addDefaultPage: false;     // Skip default page addition
+  encodeStreams: true;       // Enable stream encoding
+}
+```
+
+**Reliability Features:**
+- No external dependencies (Ghostscript removed)
+- Type-safe implementation with TypeScript
+- Automatic cleanup of annotations and metadata
+- Progressive fallback for better compression ratios
+
 #### Core Processing Functions
 ```typescript
 // Merge PDFs
@@ -63,7 +88,7 @@ export async function mergePDFs(files: File[]): Promise<Uint8Array>
 export async function splitPDF(file: File, pages: number[]): Promise<Uint8Array[]>
 
 // Compress PDF
-export async function compressPDF(file: File, quality: number): Promise<Uint8Array>
+export async function compressPDF(file: File, quality: 'low' | 'medium' | 'high'): Promise<Uint8Array>
 
 // Convert PDF to Images
 export async function pdfToImages(file: File, format: 'jpg' | 'png'): Promise<Blob[]>
@@ -114,27 +139,32 @@ Response:
 
 #### Processing Endpoints
 ```typescript
-// /api/process/[tool]/route.ts
-POST /api/process/merge
-POST /api/process/split  
-POST /api/process/compress
-POST /api/process/convert
-POST /api/process/edit
+// /api/pdf/compress/route.ts
+POST /api/pdf/compress
+Content-Type: application/json
 
 Request Body:
 {
-  fileIds: string[];
-  options: ProcessingOptions;
-  tool: string;
+  filePath: string;
+  quality: 'low' | 'medium' | 'high';
 }
 
 Response:
 {
-  success: boolean;
-  resultFileId?: string;
-  error?: string;
-  processingTime: number;
+  message: string;
+  fileName: string;
+  filePath: string;
+  originalSize: number;
+  compressedSize: number;
+  compressionRatio: string;
+  downloadUrl: string;
 }
+
+// Legacy endpoints (deprecated)
+POST /api/process/merge
+POST /api/process/split  
+POST /api/process/convert
+POST /api/process/edit
 ```
 
 #### Download Endpoint
