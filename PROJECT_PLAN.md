@@ -16,6 +16,7 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 - [x] **Merge PDF** - Combine multiple PDFs into one document ✅ (Frontend + Backend complete)
 - [x] **Split PDF** - Extract pages or split into multiple files ✅ (FULLY OPERATIONAL - Frontend + Backend complete)
 - [x] **Compress PDF** - Reduce file size while maintaining quality ✅ (Backend API complete, Frontend pending)
+- [ ] **Crop PDF** - Select and crop regions from PDF pages with visual preview and selection tools
 - [ ] **Organize PDF** - Reorder, delete, add pages
 - [ ] **Rotate PDF** - Rotate individual or multiple pages
 
@@ -56,6 +57,7 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 - **pdf-poppler** - Server-side PDF processing (Node.js)
 - **pdf2pic** - PDF to image conversion
 - **jsPDF** - PDF generation from scratch
+- **pdf-dist** - PDF.js distribution files for crop tool
 
 ### File Processing
 - **sharp** - High-performance image processing
@@ -63,6 +65,8 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 - **xlsx** - Excel spreadsheet processing
 - **formidable** - Multipart form data parsing
 - **multer** - File upload middleware
+- **jimp** - Image processing utilities for crop tool
+- **canvas** - Server-side canvas operations
 
 ### Security & Encryption
 - **crypto** - Built-in Node.js encryption
@@ -80,6 +84,9 @@ src/
 │   │   │   └── loading.tsx
 │   │   ├── split-pdf/
 │   │   ├── compress-pdf/
+│   │   ├── crop-pdf/              # NEW: PDF crop tool
+│   │   │   ├── page.tsx
+│   │   │   └── loading.tsx
 │   │   ├── convert/
 │   │   │   ├── pdf-to-word/
 │   │   │   ├── pdf-to-excel/
@@ -96,6 +103,11 @@ src/
 │   │   │   ├── split/route.ts
 │   │   │   ├── compress/route.ts
 │   │   │   └── convert/route.ts
+│   │   ├── pdf/
+│   │   │   ├── crop/                # NEW: Crop API endpoints
+│   │   │   │   ├── convert/route.ts     # PDF to images
+│   │   │   │   ├── process/route.ts     # Crop processing
+│   │   │   │   └── preview/route.ts     # Crop preview
 │   │   └── download/
 │   │       └── [fileId]/route.ts
 │   ├── globals.css
@@ -118,6 +130,13 @@ src/
 │   ├── pdf-viewer/
 │   │   ├── pdf-viewer.tsx
 │   │   └── pdf-controls.tsx
+│   ├── pdf-crop/                # NEW: PDF crop components
+│   │   ├── pdf-crop-viewer.tsx
+│   │   ├── page-thumbnail-grid.tsx
+│   │   ├── crop-canvas.tsx
+│   │   ├── crop-controls.tsx
+│   │   ├── page-selector.tsx
+│   │   └── crop-preview.tsx
 │   ├── tool-cards/
 │   │   ├── tool-card.tsx
 │   │   └── tool-grid.tsx
@@ -129,6 +148,7 @@ src/
 │   │   ├── merge.ts
 │   │   ├── split.ts
 │   │   ├── compress.ts
+│   │   ├── crop.ts                 # NEW: Crop utilities
 │   │   └── convert.ts
 │   ├── validation/
 │   │   ├── file-validation.ts
@@ -141,6 +161,7 @@ src/
 │       └── format-helpers.ts
 ├── types/
 │   ├── pdf.ts
+│   ├── crop.ts                  # NEW: Crop-specific types
 │   └── file.ts
 └── styles/
     └── globals.css
@@ -236,7 +257,7 @@ src/
 - 🔄 Split PDF page (API ready)
 - 🔄 Compress PDF page (API ready)
 
-### ⏳ **NOT STARTED** Features (84% Remaining)
+### ⚡ **NOT STARTED** Features (80% Remaining)
 
 **Document Management:**
 - ❌ Organize PDF
@@ -261,8 +282,9 @@ src/
 ### **Immediate Tasks (High Priority)**
 1. **Create Split PDF frontend page** - Backend API already complete
 2. **Create Compress PDF frontend page** - Backend API already complete
-3. **Implement PDF to Image conversion** - Backend + frontend
-4. **Implement Image to PDF conversion** - Backend + frontend
+3. **Implement PDF Crop Tool** - Complete frontend + backend implementation
+4. **Implement PDF to Image conversion** - Backend + frontend
+5. **Implement Image to PDF conversion** - Backend + frontend
 
 ### **Medium Priority Tasks**
 5. **PDF Reader/Viewer** - Essential for preview functionality
@@ -327,3 +349,65 @@ npm run dev
 - Use secure file storage practices
 
 This comprehensive plan provides the foundation for building a professional-grade PDF tools application with modern Next.js architecture and excellent user experience.
+
+## 📏 PDF Crop Tool - Implementation Plan
+
+### Overview
+The PDF Crop Tool allows users to upload a PDF, preview all pages, select crop regions on any combination of pages, and download the cropped result. This tool provides a visual interface for precise PDF page cropping with real-time preview capabilities.
+
+### Core Features
+- **File Upload**: Drag & drop or click to upload PDF files
+- **Page Preview**: Visual thumbnail grid of all PDF pages
+- **Interactive Cropping**: Canvas-based selection tool for each page
+- **Multi-page Selection**: Apply crop to single page, selected pages, or all pages
+- **Real-time Preview**: Show cropped result before download
+- **Batch Processing**: Process multiple pages with same or different crop regions
+- **Download Options**: Download cropped PDF with original quality
+
+### Key Components Required
+
+**Frontend Components:**
+- `crop-pdf/page.tsx` - Main crop tool page
+- `pdf-crop-viewer.tsx` - PDF viewer with crop functionality
+- `page-thumbnail-grid.tsx` - Grid view of all PDF pages
+- `crop-canvas.tsx` - Interactive crop selection canvas
+- `crop-controls.tsx` - Crop tool controls and options
+- `page-selector.tsx` - Page selection interface
+- `crop-preview.tsx` - Preview of cropped result
+
+**Backend API Endpoints:**
+- `/api/pdf/crop/convert` - Convert PDF pages to images
+- `/api/pdf/crop/process` - Process crop operations
+- `/api/pdf/crop/preview` - Generate crop previews
+
+**New Dependencies:**
+- Frontend: `react-pdf`, `fabric` or `konva`, `pdf-dist`
+- Backend: `pdf2pic`, `pdf-poppler`, `jimp`, `canvas`
+
+*For detailed technical specifications, API documentation, and implementation details, see [TECHNICAL_SPEC.md](./TECHNICAL_SPEC.md)*
+
+## 📏 Implementation Timeline for PDF Crop Tool
+
+### Phase 1: Backend Foundation (Days 1-2)
+- [ ] Create API endpoints for PDF to image conversion
+- [ ] Implement crop processing engine with pdf-lib
+- [ ] Set up coordinate system handling
+- [ ] Add file validation and error handling
+
+### Phase 2: Frontend Core (Days 3-4)
+- [ ] Create crop tool page structure
+- [ ] Implement PDF page rendering and thumbnail grid
+- [ ] Build interactive crop canvas component
+- [ ] Add page navigation and selection
+
+### Phase 3: Integration and Polish (Days 5-6)
+- [ ] Connect frontend with backend APIs
+- [ ] Implement real-time preview functionality
+- [ ] Add batch processing for multiple pages
+- [ ] Optimize performance and add error handling
+
+### Phase 4: Testing and Refinement (Day 7)
+- [ ] Comprehensive testing with various PDF types
+- [ ] Mobile responsiveness and touch support
+- [ ] User experience refinements
+- [ ] Documentation and deployment preparation

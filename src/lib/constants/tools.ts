@@ -36,6 +36,17 @@ export const PDF_TOOLS: PDFTool[] = [
     acceptedTypes: [FILE_TYPES.PDF]
   },
   {
+    id: 'crop',
+    title: 'Crop PDF',
+    description: 'Crop pages in your PDF document to specific dimensions',
+    icon: 'crop',
+    href: '/crop-pdf',
+    features: ['Precise cropping', 'Visual preview', 'Multiple pages'],
+    maxFiles: 1,
+    maxFileSize: MAX_FILE_SIZES.PDF,
+    acceptedTypes: [FILE_TYPES.PDF]
+  },
+  {
     id: 'convert-office',
     title: 'Convert PDF',
     description: 'Convert PDF to Word, Excel, PowerPoint, and images',

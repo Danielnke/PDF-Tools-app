@@ -59,30 +59,31 @@ export function ToolCard({
       )}
       onClick={handleClick}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-accent/10 rounded-lg">
-            <IconComponent className="h-6 w-6 text-accent" />
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-accent/10 rounded-lg">
+            <IconComponent className="h-5 w-5 text-accent" />
           </div>
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+          <CardTitle className="text-base font-semibold">{title}</CardTitle>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        <p className="text-muted text-sm leading-relaxed">{description}</p>
+      <CardContent className="space-y-2">
+        <p className="text-muted text-xs leading-tight">{description}</p>
         
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {features.map((feature, index) => (
-            <li key={index} className="text-sm text-muted flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-accent rounded-full flex-shrink-0" />
+            <li key={index} className="text-xs text-muted flex items-center gap-1.5">
+              <div className="w-1 h-1 bg-accent rounded-full flex-shrink-0" />
               <span>{feature}</span>
             </li>
           ))}
         </ul>
         
         <Button 
-          className="w-full mt-4"
+          className="w-full mt-2 h-8 text-xs"
           variant="outline"
+          size="sm"
         >
           Use Tool
         </Button>

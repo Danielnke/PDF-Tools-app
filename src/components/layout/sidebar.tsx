@@ -12,7 +12,8 @@ import {
   Shield, 
   RotateCw,
   Eye,
-  Zap 
+  Zap,
+  Crop 
 } from "lucide-react";
 
 interface SidebarProps {
@@ -41,6 +42,13 @@ const pdfTools = [
     href: '/compress-pdf',
     icon: Archive,
     description: 'Reduce PDF file size'
+  },
+  {
+    id: 'crop',
+    title: 'Crop PDF',
+    href: '/crop-pdf',
+    icon: Crop,
+    description: 'Crop PDF pages'
   },
   {
     id: 'convert-pdf',

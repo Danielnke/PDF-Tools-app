@@ -6,6 +6,9 @@ import {
   SplitResponse,
   CompressRequest,
   CompressResponse,
+  CropRequest,
+  CropResponse,
+  PageAnalysisResponse,
   ApiResponse,
 } from '@/types/api';
 
@@ -164,6 +167,21 @@ class PdfApiClient {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   }
 
+  // Crop PDF
+  async cropPdf(request: CropRequest): Promise<ApiResponse<CropResponse>> {
+    return this.makeRequest<CropResponse>('/api/pdf/crop', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // Analyze PDF pages
+  async analyzePdf(filePath: string): Promise<ApiResponse<PageAnalysisResponse>> {
+    return this.makeRequest<PageAnalysisResponse>(`/api/pdf/crop?filePath=${encodeURIComponent(filePath)}`, {
+      method: 'GET',
+    });
+  }
+
   // Progress tracking
   async trackProgress(
     jobId: string,
@@ -196,6 +214,8 @@ export const usePdfApi = () => {
     mergePdfs: pdfApi.mergePdfs.bind(pdfApi),
     splitPdf: pdfApi.splitPdf.bind(pdfApi),
     compressPdf: pdfApi.compressPdf.bind(pdfApi),
+    cropPdf: pdfApi.cropPdf.bind(pdfApi),
+    analyzePdf: pdfApi.analyzePdf.bind(pdfApi),
     downloadFile: pdfApi.downloadFile.bind(pdfApi),
     validateFiles: pdfApi.validateFiles.bind(pdfApi),
     trackProgress: pdfApi.trackProgress.bind(pdfApi),

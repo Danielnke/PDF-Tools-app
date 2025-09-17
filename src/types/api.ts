@@ -146,6 +146,59 @@ export interface RateLimitInfo {
   retryAfter?: number;
 }
 
+// Crop API Types
+export interface CropRequest {
+  filePath: string;
+  crops: Array<{
+    pageNumber: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    unit: 'px' | 'pt' | 'mm' | 'in';
+  }>;
+  applyToAllPages?: boolean;
+  maintainAspectRatio?: boolean;
+}
+
+export interface CropResponse {
+  message: string;
+  filePath: string;
+  results: Array<{
+    pageNumber: number;
+    originalDimensions: {
+      width: number;
+      height: number;
+    };
+    croppedDimensions: {
+      width: number;
+      height: number;
+    };
+    cropArea: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  }>;
+  processingInfo: {
+    totalPagesProcessed: number;
+    averageProcessingTime: number;
+    totalProcessingTime: number;
+  };
+}
+
+// Page Analysis Types
+export interface PageAnalysisResponse {
+  success: boolean;
+  pageCount: number;
+  pageDimensions: Array<{
+    pageNumber: number;
+    width: number;
+    height: number;
+  }>;
+}
+
 // File Info Types
 export interface FileInfo {
   name: string;
