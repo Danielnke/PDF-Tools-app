@@ -155,9 +155,10 @@ export default function SplitPdfPage() {
 
       console.log('Split result:', result);
 
-      if (result.success && result.data?.files && result.data.files.length > 0) {
-        const outputDirectory = result.data.outputDir || '';
-        const splitResults: SplitResult[] = result.data.files.map(f => ({
+
+      if (result.success && result.data?.data?.files && result.data.data.files.length > 0) {
+        const outputDirectory = result.data.data.outputDir || '';
+        const splitResults: SplitResult[] = result.data.data.files.map((f: { fileName: string; filePath: string; pages: string }) => ({
           fileName: f.fileName,
           downloadUrl: `/api/download/${f.fileName}${outputDirectory ? `?dir=${outputDirectory}` : ''}`,
           pages: f.pages || '1',
@@ -168,7 +169,8 @@ export default function SplitPdfPage() {
           setOutputDir(outputDirectory);
         }
       } else {
-        throw new Error(result.message || 'Split failed');
+        console.error('Split failed - no files returned:', result);
+        throw new Error(result.message || 'Split failed - no files were created');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to split PDF');

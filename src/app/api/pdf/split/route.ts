@@ -91,6 +91,8 @@ export async function POST(request: NextRequest) {
       size: 0, // Will be calculated by frontend if needed
       type: 'application/pdf'
     }));
+    
+
 
     return NextResponse.json({
       success: true,

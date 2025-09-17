@@ -14,7 +14,7 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 
 ### Document Management
 - [x] **Merge PDF** - Combine multiple PDFs into one document ✅ (Frontend + Backend complete)
-- [x] **Split PDF** - Extract pages or split into multiple files ✅ (Backend API complete, Frontend pending)
+- [x] **Split PDF** - Extract pages or split into multiple files ✅ (FULLY OPERATIONAL - Frontend + Backend complete)
 - [x] **Compress PDF** - Reduce file size while maintaining quality ✅ (Backend API complete, Frontend pending)
 - [ ] **Organize PDF** - Reorder, delete, add pages
 - [ ] **Rotate PDF** - Rotate individual or multiple pages

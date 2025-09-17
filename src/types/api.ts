@@ -41,15 +41,16 @@ export interface SplitRequest {
 
 export interface SplitResponse {
   message: string;
-  files: Array<{
-    fileName: string;
-    filePath: string;
-    pages: string;
-    size?: number;
-    type?: string;
-  }>;
-  outputDir?: string;
-  downloadUrl: string;
+  data: {
+    files: Array<{
+      fileName: string;
+      filePath: string;
+      pages: string;
+      size?: number;
+      type?: string;
+    }>;
+    outputDir?: string;
+  };
 }
 
 export interface CompressRequest {
