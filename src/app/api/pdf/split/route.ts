@@ -86,13 +86,18 @@ export async function POST(request: NextRequest) {
 
     const files = splitFiles.map(file => ({
       fileName: file.fileName,
-      downloadUrl: `/api/download/${basename(file.filePath)}`,
+      filePath: file.filePath,
       pages: file.pages,
+      size: 0, // Will be calculated by frontend if needed
+      type: 'application/pdf'
     }));
 
     return NextResponse.json({
       success: true,
-      data: { files },
+      data: { 
+        files,
+        outputDir: basename(outputDir)
+      },
       message: 'PDF split successfully',
     });
 

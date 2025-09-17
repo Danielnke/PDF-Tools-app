@@ -10,6 +10,8 @@ export async function GET(
 ) {
   try {
     const { filename } = params;
+    const url = new URL(request.url);
+    const outputDir = url.searchParams.get('dir');
     
     if (!filename) {
       return NextResponse.json(
@@ -19,50 +21,64 @@ export async function GET(
     }
 
     // Security check: prevent directory traversal
-    if (filename.includes('..') || filename.includes('/')) {
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return NextResponse.json(
         { error: 'Invalid filename' },
         { status: 400 }
       );
     }
 
-    // Search for the file in temp directories
-    const searchPaths = [
-      join(tmpdir(), 'pdf-tools-results'),
-      join(tmpdir(), 'pdf-tools-uploads'),
-    ];
-
     let filePath = null;
     
-    // First, check the immediate directories
-    for (const basePath of searchPaths) {
-      const fullPath = join(basePath, filename);
+    // If outputDir is provided, try that first
+    if (outputDir) {
+      const dirPath = join(tmpdir(), 'pdf-tools-results', outputDir);
+      const fullPath = join(dirPath, filename);
       if (existsSync(fullPath)) {
         filePath = fullPath;
-        break;
       }
     }
     
-    // If not found, check subdirectories using a simpler approach
+    // If not found, search in common directories
     if (!filePath) {
-      const fs = require('fs');
-      const path = require('path');
+      const searchPaths = [
+        join(tmpdir(), 'pdf-tools-results'),
+        join(tmpdir(), 'pdf-tools-uploads'),
+      ];
       
+      // First, check the immediate directories
       for (const basePath of searchPaths) {
-        if (!existsSync(basePath)) continue;
+        const fullPath = join(basePath, filename);
+        if (existsSync(fullPath)) {
+          filePath = fullPath;
+          break;
+        }
+      }
+      
+      // If not found, check subdirectories
+      if (!filePath) {
+        const fs = require('fs');
         
-        const dirs = fs.readdirSync(basePath, { withFileTypes: true })
-          .filter((dirent: any) => dirent.isDirectory())
-          .map((dirent: any) => dirent.name);
+        for (const basePath of searchPaths) {
+          if (!existsSync(basePath)) continue;
           
-        for (const dir of dirs) {
-          const filePathToCheck = join(basePath, dir, filename);
-          if (existsSync(filePathToCheck)) {
-            filePath = filePathToCheck;
-            break;
+          try {
+            const dirs = fs.readdirSync(basePath, { withFileTypes: true })
+              .filter((dirent: any) => dirent.isDirectory())
+              .map((dirent: any) => dirent.name);
+              
+            for (const dir of dirs) {
+              const filePathToCheck = join(basePath, dir, filename);
+              if (existsSync(filePathToCheck)) {
+                filePath = filePathToCheck;
+                break;
+              }
+            }
+            if (filePath) break;
+          } catch (err) {
+            console.warn(`Error reading directory ${basePath}:`, err);
           }
         }
-        if (filePath) break;
       }
     }
 

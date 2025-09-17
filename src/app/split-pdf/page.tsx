@@ -24,6 +24,7 @@ interface SplitResult {
   fileName: string;
   downloadUrl: string;
   pages: string;
+  filePath: string;
 }
 
 export default function SplitPdfPage() {
@@ -33,6 +34,7 @@ export default function SplitPdfPage() {
   const [results, setResults] = useState<SplitResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploadDir, setUploadDir] = useState<string>('');
+  const [outputDir, setOutputDir] = useState<string>('');
   const [splitMode, setSplitMode] = useState<'range' | 'individual'>('individual');
   const [pageRanges, setPageRanges] = useState<string>('');
 
@@ -154,12 +156,17 @@ export default function SplitPdfPage() {
       console.log('Split result:', result);
 
       if (result.success && result.data?.files && result.data.files.length > 0) {
+        const outputDirectory = result.data.outputDir || '';
         const splitResults: SplitResult[] = result.data.files.map(f => ({
           fileName: f.fileName,
-          downloadUrl: `/api/download/${f.fileName}`,
-          pages: f.pages || '1'
+          downloadUrl: `/api/download/${f.fileName}${outputDirectory ? `?dir=${outputDirectory}` : ''}`,
+          pages: f.pages || '1',
+          filePath: f.filePath || ''
         }));
         setResults(splitResults);
+        if (outputDirectory) {
+          setOutputDir(outputDirectory);
+        }
       } else {
         throw new Error(result.message || 'Split failed');
       }

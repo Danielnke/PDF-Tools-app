@@ -45,7 +45,10 @@ export interface SplitResponse {
     fileName: string;
     filePath: string;
     pages: string;
+    size?: number;
+    type?: string;
   }>;
+  outputDir?: string;
   downloadUrl: string;
 }
 
