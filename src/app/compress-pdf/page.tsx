@@ -42,7 +42,6 @@ export default function CompressPdfPage() {
   const [uploadDir, setUploadDir] = useState<string>('');
   const [compressionLevel, setCompressionLevel] = useState<'low' | 'medium' | 'high'>('medium');
   const [isValidating, setIsValidating] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   // const { toast, setToast } = useToast(); // Disabled temporarily for deployment
   const setToast = (options: { title: string; description: string; variant?: string }) => console.log('Toast:', options);
 
@@ -71,7 +70,7 @@ export default function CompressPdfPage() {
     }
 
     const newFile: UploadedFile = {
-      id: crypto.randomUUID(),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
       originalName: fileToUpload.name,
       fileName: '',
       filePath: '',
@@ -105,7 +104,6 @@ export default function CompressPdfPage() {
           setUploadDir(uploadResult.data.uploadDir);
         }
     } catch {
-      setIsLoading(false);
       setToast({
         title: 'Error',
         description: 'Failed to upload file. Please try again.',
@@ -303,7 +301,7 @@ export default function CompressPdfPage() {
                           >
                             <div className="text-center">
                               <div className="font-medium">Low</div>
-                              <div className="text-xs">90% quality</div>
+                              <div className="text-xs">50% quality</div>
                             </div>
                           </Button>
                           <Button
@@ -325,17 +323,17 @@ export default function CompressPdfPage() {
                           >
                             <div className="text-center">
                               <div className="font-medium">High</div>
-                              <div className="text-xs">50% quality</div>
+                              <div className="text-xs">90% quality</div>
                             </div>
                           </Button>
                         </div>
                         <div className="mt-3 p-3 bg-muted rounded-md">
                           <p className="text-sm font-medium mb-1">Quality Details:</p>
                           <ul className="text-xs text-muted-foreground space-y-1">
-                            <li>• <strong>Low:</strong> Minimal compression, preserves original quality</li>
-                            <li>• <strong>Medium:</strong> Balanced compression with font subsetting</li>
-                            <li>• <strong>High:</strong> Maximum compression with image optimization</li>
-                          </ul>
+                          <li>• <strong>Low:</strong> Maximum compression, smaller file size</li>
+                          <li>• <strong>Medium:</strong> Balanced compression with font subsetting</li>
+                          <li>• <strong>High:</strong> Minimal compression, preserves original quality</li>
+                        </ul>
                         </div>
                       </div>
 

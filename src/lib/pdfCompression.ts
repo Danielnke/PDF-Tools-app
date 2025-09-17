@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 
 export interface CompressionOptions {
   quality: 'low' | 'medium' | 'high';
