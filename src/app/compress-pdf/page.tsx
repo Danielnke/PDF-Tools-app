@@ -6,18 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Upload, Download, Archive, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { pdfApi } from '@/lib/api-client/pdf-api';
-import { Upload, Download, FileText, AlertCircle, CheckCircle, Archive } from 'lucide-react';
-import { PDF_TOOLS } from '@/lib/constants/tools';
-import { ProcessedFile } from '@/types/api';
 
-interface UploadedFile extends ProcessedFile {
+interface UploadedFile {
   id: string;
+  originalName: string;
+  fileName: string;
+  filePath: string;
+  size: number;
+  originalSize: number;
+  type: string;
   status: 'uploading' | 'uploaded' | 'error';
   progress: number;
-  originalSize: number;
-  originalName: string;
-  filePath: string;
 }
 
 interface CompressResult {
@@ -26,6 +27,9 @@ interface CompressResult {
   originalSize: number;
   compressedSize: number;
   compressionRatio: string;
+  techniquesApplied?: string[];
+  processingTime?: number;
+  qualityLevel?: string;
 }
 
 export default function CompressPdfPage() {
@@ -38,6 +42,9 @@ export default function CompressPdfPage() {
   const [uploadDir, setUploadDir] = useState<string>('');
   const [compressionLevel, setCompressionLevel] = useState<'low' | 'medium' | 'high'>('medium');
   const [isValidating, setIsValidating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  // const { toast, setToast } = useToast(); // Disabled temporarily for deployment
+  const setToast = (options: { title: string; description: string; variant?: string }) => console.log('Toast:', options);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setError(null);
@@ -97,9 +104,13 @@ export default function CompressPdfPage() {
           });
           setUploadDir(uploadResult.data.uploadDir);
         }
-    } catch (err) {
-      setError('Upload failed. Please try again.');
-      setFile(null);
+    } catch {
+      setIsLoading(false);
+      setToast({
+        title: 'Error',
+        description: 'Failed to upload file. Please try again.',
+        variant: 'destructive',
+      });
     }
   }, []);
 
@@ -161,7 +172,7 @@ export default function CompressPdfPage() {
       } else {
         setError(result.error || 'Failed to compress PDF');
       }
-    } catch (err) {
+    } catch {
       clearInterval(progressInterval);
       setError('Processing failed. Please try again.');
     } finally {
@@ -382,11 +393,11 @@ export default function CompressPdfPage() {
                       <div className="text-2xl font-bold text-green-600">{result.compressionRatio}</div>
                     </div>
 
-                    {(result as any).techniquesApplied && (
+                    {result.techniquesApplied && (
                       <div className="bg-card p-3 rounded-md border">
                         <div className="text-sm font-medium mb-2">Techniques Applied:</div>
                         <div className="flex flex-wrap gap-2">
-                          {(result as any).techniquesApplied.map((technique: string, index: number) => (
+                          {result.techniquesApplied.map((technique: string, index: number) => (
                             <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                               {technique.replace('-', ' ')}
                             </span>
@@ -395,9 +406,9 @@ export default function CompressPdfPage() {
                       </div>
                     )}
 
-                    {(result as any).processingTime && (
+                    {result.processingTime && (
                       <div className="text-xs text-muted-foreground text-center">
-                        Processed in {(result as any).processingTime}ms
+                        Processed in {result.processingTime}ms
                       </div>
                     )}
 

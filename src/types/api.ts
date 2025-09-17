@@ -71,7 +71,7 @@ export interface CompressResponse {
 export interface ConvertRequest {
   filePath: string;
   targetFormat: string;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 export interface ConvertResponse {
@@ -82,7 +82,7 @@ export interface ConvertResponse {
 }
 
 // General API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
@@ -111,7 +111,7 @@ export interface ToolConfig {
   supportedFormats: string[];
   maxFileSize: number; // in bytes
   maxFiles: number;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 // Error Response Types

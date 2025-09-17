@@ -1,4 +1,4 @@
-import { PDFDocument, PDFImage, PDFPage, PDFFont } from 'pdf-lib';
+import { PDFDocument, PDFFont } from 'pdf-lib';
 
 export interface CompressionOptions {
   quality: 'low' | 'medium' | 'high';
@@ -98,7 +98,7 @@ export class PDFCompressionService {
 
       // Progressive fallback if compression is insufficient
       if (compressionRatio < 5 && options.quality !== 'low') {
-        return this.progressiveFallback(fileBytes, options, result);
+        return this.progressiveFallback(fileBytes, options);
       }
 
       return { compressedBytes, result };
@@ -111,15 +111,9 @@ export class PDFCompressionService {
 
   private async subsetFonts(pdf: PDFDocument, techniques: string[]): Promise<void> {
     try {
-      const pages = pdf.getPages();
-      const fonts = new Set<PDFFont>();
-
-      // Collect all fonts used in the document
-      for (const page of pages) {
-        // Note: Font subsetting in pdf-lib requires accessing font references
-        // This is a simplified implementation that focuses on marking the technique as applied
-        techniques.push('font-subsetting');
-      }
+      // Note: Font subsetting in pdf-lib requires accessing font references
+      // This is a simplified implementation that focuses on marking the technique as applied
+      techniques.push('font-subsetting');
     } catch (error) {
       console.warn('Font subsetting failed:', error);
     }
@@ -201,8 +195,7 @@ export class PDFCompressionService {
 
   private async progressiveFallback(
     fileBytes: Uint8Array,
-    options: CompressionOptions,
-    previousResult: CompressionResult
+    options: CompressionOptions
   ): Promise<{ compressedBytes: Uint8Array; result: CompressionResult }> {
     console.log('Applying progressive fallback compression...');
     

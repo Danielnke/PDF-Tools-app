@@ -7,7 +7,7 @@ import { tmpdir } from 'os';
 
 export async function POST(request: NextRequest) {
   try {
-    const { files, uploadDir } = await request.json();
+    const { files } = await request.json();
 
     if (!files || files.length < 2) {
       return NextResponse.json(
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     for (const fileInfo of files) {
       try {
         await unlink(fileInfo.filePath);
-      } catch (error) {
+      } catch {
         console.warn(`Could not delete temp file: ${fileInfo.filePath}`);
       }
     }

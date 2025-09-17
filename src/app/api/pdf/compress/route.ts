@@ -3,24 +3,6 @@ import { readFile, writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
-import { PDFDocument } from 'pdf-lib';
-
-interface CompressionConfig {
-  imageQuality: number;
-  maxImageDimension: number;
-  removeMetadata: boolean;
-  subsetFonts: boolean;
-  compressionLevel: number;
-  pageScaling: number;
-}
-
-interface CompressionResult {
-  originalSize: number;
-  compressedSize: number;
-  compressionRatio: number;
-  techniquesApplied: string[];
-}
-
 import { PDFCompressionService } from '@/lib/pdfCompression';
 
 export async function POST(request: NextRequest) {

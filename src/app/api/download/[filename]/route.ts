@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync, Dirent } from 'fs';
 
 export async function GET(
   request: NextRequest,
@@ -57,15 +57,13 @@ export async function GET(
       
       // If not found, check subdirectories
       if (!filePath) {
-        const fs = require('fs');
-        
         for (const basePath of searchPaths) {
           if (!existsSync(basePath)) continue;
           
           try {
-            const dirs = fs.readdirSync(basePath, { withFileTypes: true })
-              .filter((dirent: any) => dirent.isDirectory())
-              .map((dirent: any) => dirent.name);
+            const dirs = readdirSync(basePath, { withFileTypes: true })
+              .filter((dirent: Dirent) => dirent.isDirectory())
+              .map((dirent: Dirent) => dirent.name);
               
             for (const dir of dirs) {
               const filePathToCheck = join(basePath, dir, filename);
@@ -100,7 +98,7 @@ export async function GET(
       zip: 'application/zip',
     };
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentTypes[fileExtension || 'pdf'] || 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
