@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { FileUploadSection } from '@/components/crop-pdf/file-upload-section';
-import { PdfViewerSimple } from '@/components/crop-pdf/pdf-viewer-simple';
+import { PdfViewerContinuous } from '@/components/crop-pdf/pdf-viewer-continuous';
 import { ProcessingStatus } from '@/components/crop-pdf/processing-status';
 import { ResultsDisplay } from '@/components/crop-pdf/results-display';
 import { type CropArea, type PageInfo, type CropResult } from '@/lib/pdf-crop-utils';
