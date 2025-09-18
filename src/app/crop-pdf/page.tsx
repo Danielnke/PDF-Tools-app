@@ -136,7 +136,22 @@ export default function CropPDFPage() {
       // Convert crop areas to the format expected by the API
       let crops;
       
-      if (cropMode === 'single') {
+      if (cropMode === 'copy-to-all') {
+        // Copy-to-all mode - find any crop area and apply to all pages
+        const existingCrop = Object.values(selectedCropAreas).find(area => area.width > 0 && area.height > 0);
+        if (!existingCrop) {
+          setError('Please create a crop area by dragging on any page first.');
+          return;
+        }
+        crops = selectedPages.map(pageNum => ({
+          pageNumber: pageNum,
+          x: existingCrop.x,
+          y: existingCrop.y,
+          width: existingCrop.width,
+          height: existingCrop.height,
+          unit: 'pt' as const,
+        }));
+      } else if (cropMode === 'single') {
         // Single page mode - use the crop area for the current page
         const pageNum = selectedPages[0];
         const cropArea = selectedCropAreas[pageNum];
@@ -285,22 +300,28 @@ export default function CropPDFPage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8 px-4">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">PDF Crop Tool</h1>
-            <p className="text-muted-foreground">
+      <div className="h-screen flex flex-col">
+        {/* Header */}
+        <div className="bg-card border-b border-border px-6 py-4 flex-shrink-0">
+          <div className="text-center space-y-1">
+            <h1 className="text-2xl font-bold text-foreground">PDF Crop Tool</h1>
+            <p className="text-sm text-muted-foreground">
               Upload a PDF and crop specific areas from each page with precision
             </p>
           </div>
+        </div>
 
+        <div className="flex-1 p-4 min-h-0">
           {/* File Upload Section */}
           {!uploadedFile && !result && (
-            <FileUploadSection
-              onFileUploaded={handleFileUploaded}
-              isAnalyzing={isAnalyzing}
-            />
+            <div className="flex items-center justify-center h-full">
+              <div className="w-full max-w-2xl">
+                <FileUploadSection
+                  onFileUploaded={handleFileUploaded}
+                  isAnalyzing={isAnalyzing}
+                />
+              </div>
+            </div>
           )}
 
           {/* PDF Viewer */}
@@ -320,22 +341,29 @@ export default function CropPDFPage() {
 
           {/* Processing Status */}
           {(isProcessing || error) && (
-            <ProcessingStatus
-              isProcessing={isProcessing}
-              processingProgress={processingProgress}
-              error={error}
-            />
+            <div className="flex items-center justify-center h-full">
+              <div className="w-full max-w-md">
+                <ProcessingStatus
+                  isProcessing={isProcessing}
+                  processingProgress={processingProgress}
+                  error={error}
+                />
+              </div>
+            </div>
           )}
 
           {/* Results Display */}
           {result && (
-            <ResultsDisplay
-              result={result}
-              onDownload={handleDownload}
-              onReset={handleReset}
-            />
+            <div className="flex items-center justify-center h-full">
+              <div className="w-full max-w-2xl">
+                <ResultsDisplay
+                  result={result}
+                  onDownload={handleDownload}
+                  onReset={handleReset}
+                />
+              </div>
+            </div>
           )}
-
         </div>
       </div>
     </MainLayout>
