@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Crop } from "lucide-react";
 
@@ -64,12 +64,15 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       const scale = scaleMapRef.current[pageNumber] || 1;
-      const a = (prevTemp => prevTemp[pageNumber])(tempArea);
       const area = tempArea[pageNumber];
       if (area && area.width > 10 && area.height > 10) {
         onCropAreaChange(pageNumber, { x: area.x / scale, y: area.y / scale, width: area.width / scale, height: area.height / scale });
       }
-      setTempArea(prev => ({ ...prev, [pageNumber]: undefined as any }));
+      setTempArea(prev => {
+        const newTempArea = { ...prev };
+        delete newTempArea[pageNumber];
+        return newTempArea;
+      });
       setDragging(null);
     };
 
@@ -103,7 +106,11 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
         height: a.height / scale,
       });
     }
-    setTempArea(prev => ({ ...prev, [pageNumber]: undefined as any }));
+    setTempArea(prev => {
+      const newTempArea = { ...prev };
+      delete newTempArea[pageNumber];
+      return newTempArea;
+    });
   }, [dragging, tempArea, onCropAreaChange]);
 
   const targetPageWidth = 520; // smaller vertical preview

@@ -104,17 +104,6 @@ export default function CropPDFPage() {
     }
   }, []);
 
-  const handleRemoveFile = useCallback(() => {
-    setUploadedFile(null);
-    setUploadedFileData(null);
-    setPageInfo([]);
-    setCurrentPage(1);
-    setCropAreas({});
-    setResult(null);
-    setError(null);
-    setIsAnalyzing(false);
-  }, []);
-
   const handleCropAreaChange = useCallback((pageNumber: number, cropArea: CropArea) => {
     setCropAreas(prev => ({
       ...prev,
@@ -187,13 +176,26 @@ export default function CropPDFPage() {
 
   const handleDownload = useCallback(async (downloadUrl: string, fileName: string) => {
     try {
+      console.log('Downloading from URL:', downloadUrl);
+      
       // Use the API download endpoint
       const response = await fetch(downloadUrl);
+      
+      console.log('Download response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to download file');
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Download failed. Response:', errorText);
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
+      console.log('Downloaded blob size:', blob.size);
+      
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+      
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
@@ -207,9 +209,12 @@ export default function CropPDFPage() {
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, 1000);
+      
+      console.log('Download completed successfully');
     } catch (error) {
       console.error('Download error:', error);
-      setError('Failed to download file');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download file';
+      setError(`Download failed: ${errorMessage}`);
     }
   }, []);
 
@@ -287,7 +292,7 @@ export default function CropPDFPage() {
                     onClick={() => {
                       if (!cropAreas[currentPage]) return;
                       const current = cropAreas[currentPage];
-                      const all: { [k: number]: any } = {};
+                      const all: { [k: number]: CropArea } = {};
                       pageInfo.forEach(p => (all[p.pageNumber] = { ...current }));
                       handleCrop('all', pageInfo.map(p => p.pageNumber), all);
                     }}

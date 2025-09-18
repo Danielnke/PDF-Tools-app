@@ -13,6 +13,9 @@ export async function GET(
     const url = new URL(request.url);
     const outputDir = url.searchParams.get('dir');
     
+    console.log('Download request - filename:', filename);
+    console.log('Download request - dir param:', outputDir);
+    
     if (!filename) {
       return NextResponse.json(
         { error: 'Filename is required' },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, writeFile, mkdir, rm, stat } from 'fs/promises';
+import { readFile, writeFile, mkdir, stat } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
   
   try {
-    const { filePath, cropData, cropMode, selectedPages } = await request.json();
+    const { filePath, cropData, cropMode } = await request.json();
 
     // Convert to legacy format for compatibility
-    const crops = cropData?.map((item: any) => ({
+    const crops = cropData?.map((item: { pageNumber: number; cropArea: { x: number; y: number; width: number; height: number; unit?: string } }) => ({
       pageNumber: item.pageNumber,
       x: item.cropArea.x,
       y: item.cropArea.y,
@@ -101,12 +101,18 @@ export async function POST(request: NextRequest) {
       const totalProcessingTime = results.reduce((sum, result) => sum + result.processingTime, 0);
       const avgProcessingTime = results.length > 0 ? totalProcessingTime / results.length : 0;
 
-      const fileName = outputPath.split('/').pop() || `cropped-${uuidv4()}.pdf`;
+      const fileName = outputPath.split(/[\/\\]/).pop() || `cropped-${uuidv4()}.pdf`;
+      const dirName = outputDir.split(/[\/\\]/).pop() || '';
+      
+      console.log('Output path:', outputPath);
+      console.log('Output dir:', outputDir);
+      console.log('Extracted fileName:', fileName);
+      console.log('Extracted dirName:', dirName);
 
       return NextResponse.json({
         success: true,
         fileName,
-        downloadUrl: `/api/download/${fileName}`,
+        downloadUrl: `/api/download/${fileName}?dir=${dirName}`,
         originalSize: origStat.size,
         croppedSize: outStat.size,
         results: results.map(result => ({
