@@ -106,7 +106,7 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
     setTempArea(prev => ({ ...prev, [pageNumber]: undefined as any }));
   }, [dragging, tempArea, onCropAreaChange]);
 
-  const targetPageWidth = 640; // compact vertical preview
+  const targetPageWidth = 520; // smaller vertical preview
 
   return (
     <div className="relative h-full w-full overflow-auto bg-background">
