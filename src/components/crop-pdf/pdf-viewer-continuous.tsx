@@ -37,7 +37,7 @@ interface PdfViewerContinuousProps {
 }
 
 export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChange }: PdfViewerContinuousProps) {
-  const [dragging, setDragging] = useState<{ page: number; startX: number; startY: number } | null>(null);
+  const [dragging, setDragging] = useState<{ page: number; startX: number; startY: number; target: HTMLDivElement | null } | null>(null);
   const [tempArea, setTempArea] = useState<{ [page: number]: CropArea }>({});
   const scaleMapRef = useRef<Record<number, number>>({});
 
