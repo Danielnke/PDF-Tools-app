@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { FileUploadSection } from '@/components/crop-pdf/file-upload-section';
-import { PdfViewer } from '@/components/crop-pdf/pdf-viewer';
+import { PdfViewerSimple } from '@/components/crop-pdf/pdf-viewer-simple';
 import { ProcessingStatus } from '@/components/crop-pdf/processing-status';
 import { ResultsDisplay } from '@/components/crop-pdf/results-display';
 import { type CropArea, type PageInfo, type CropResult } from '@/lib/pdf-crop-utils';
@@ -122,11 +122,8 @@ export default function CropPDFPage() {
     }));
   }, []);
 
-  const handleCrop = useCallback(async (cropMode: 'single' | 'multiple' | 'all' | 'copy-to-all', selectedPages: number[], selectedCropAreas: { [pageNumber: number]: CropArea }) => {
-    if (!uploadedFileData || !uploadedFile) {
-      setError('No file selected for cropping');
-      return;
-    }
+  const handleCrop = useCallback(async (cropMode: 'single' | 'all', selectedPages: number[], cropAreas: { [pageNumber: number]: CropArea }) => {
+    if (!uploadedFileData) return;
 
     setIsProcessing(true);
     setProcessingProgress(0);
@@ -134,79 +131,11 @@ export default function CropPDFPage() {
 
     try {
       // Convert crop areas to the format expected by the API
-      let crops;
-      
-      if (cropMode === 'copy-to-all') {
-        // Copy-to-all mode - find any crop area and apply to all pages
-        const existingCrop = Object.values(selectedCropAreas).find(area => area.width > 0 && area.height > 0);
-        if (!existingCrop) {
-          setError('Please create a crop area by dragging on any page first.');
-          return;
-        }
-        crops = selectedPages.map(pageNum => ({
-          pageNumber: pageNum,
-          x: existingCrop.x,
-          y: existingCrop.y,
-          width: existingCrop.width,
-          height: existingCrop.height,
-          unit: 'pt' as const,
-        }));
-      } else if (cropMode === 'single') {
-        // Single page mode - use the crop area for the current page
-        const pageNum = selectedPages[0];
-        const cropArea = selectedCropAreas[pageNum];
-        if (!cropArea || cropArea.width <= 0 || cropArea.height <= 0) {
-          setError('Please select a crop area by dragging on the PDF page');
-          return;
-        }
-        crops = [{
-          pageNumber: pageNum,
-          x: cropArea.x,
-          y: cropArea.y,
-          width: cropArea.width,
-          height: cropArea.height,
-          unit: 'pt' as const,
-        }];
-      } else if (cropMode === 'multiple') {
-        // Multiple pages mode - use individual crop areas for each selected page
-        crops = Object.entries(selectedCropAreas)
-          .filter(([pageNumber, cropArea]) => {
-            const pageNum = parseInt(pageNumber);
-            return selectedPages.includes(pageNum) && cropArea.width > 0 && cropArea.height > 0;
-          })
-          .map(([pageNumber, cropArea]) => ({
-            pageNumber: parseInt(pageNumber),
-            x: cropArea.x,
-            y: cropArea.y,
-            width: cropArea.width,
-            height: cropArea.height,
-            unit: 'pt' as const,
-          }));
-      } else { // 'all'
-        // All pages mode - use the first available crop area and apply it to all pages
-        const firstCropArea = Object.values(selectedCropAreas).find(area => area.width > 0 && area.height > 0);
-        if (!firstCropArea) {
-          setError('Please create a crop area by dragging on the PDF page');
-          return;
-        }
-        crops = selectedPages.map(pageNum => ({
-          pageNumber: pageNum,
-          x: firstCropArea.x,
-          y: firstCropArea.y,
-          width: firstCropArea.width,
-          height: firstCropArea.height,
-          unit: 'pt' as const,
-        }));
-      }
+      const cropData = Object.entries(cropAreas).map(([pageNumber, area]) => ({
+        pageNumber: parseInt(pageNumber),
+        cropArea: area
+      }));
 
-      if (crops.length === 0) {
-        setError('Please select at least one crop area by dragging on the PDF pages');
-        return;
-      }
-
-      setProcessingProgress(25);
-
-      // Use the server-side cropping API
       const response = await fetch('/api/pdf/crop', {
         method: 'POST',
         headers: {
@@ -214,48 +143,28 @@ export default function CropPDFPage() {
         },
         body: JSON.stringify({
           filePath: uploadedFileData.filePath,
-          crops: crops,
-          applyToAllPages: cropMode === 'all',
-          maintainAspectRatio: false,
+          cropData: cropData,
+          cropMode: cropMode === 'all' ? 'all' : 'single',
+          selectedPages: selectedPages
         }),
       });
 
-      setProcessingProgress(75);
+      const result = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Create a download URL for the cropped file
-        const fileName = result.filePath.split('/').pop() || 'cropped.pdf';
-        const downloadUrl = `/api/download/${fileName}`;
-        
-        const cropResult: CropResult = {
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-          originalSize: uploadedFileData.size,
-          croppedSize: result.fileSize || uploadedFileData.size,
-          results: result.results,
-        };
-        
-        setResult(cropResult);
-        setProcessingProgress(100);
-      } else {
         throw new Error(result.error || 'Failed to crop PDF');
       }
+
+      setResult(result);
+      setProcessingProgress(100);
     } catch (error) {
-      console.error('Error cropping PDF:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to crop PDF';
-      setError(errorMessage);
+      console.error('Crop error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to crop PDF');
+      setProcessingProgress(0);
     } finally {
       setIsProcessing(false);
-      setProcessingProgress(0);
     }
-  }, [uploadedFileData, uploadedFile]);
+  }, [uploadedFileData]);
 
   const handleDownload = useCallback(async (downloadUrl: string, fileName: string) => {
     try {
@@ -326,7 +235,7 @@ export default function CropPDFPage() {
 
           {/* PDF Viewer */}
           {uploadedFile && pageInfo.length > 0 && !result && (
-            <PdfViewer
+            <PdfViewerSimple
               file={uploadedFile}
               pageInfo={pageInfo}
               currentPage={currentPage}
