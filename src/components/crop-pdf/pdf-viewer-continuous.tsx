@@ -42,12 +42,40 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
   const scaleMapRef = useRef<Record<number, number>>({});
 
   const handleMouseDown = useCallback((pageNumber: number, e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setDragging({ page: pageNumber, startX: x, startY: y });
-    setTempArea(prev => ({ ...prev, [pageNumber]: { x, y, width: 0, height: 0 } }));
-  }, []);
+    const target = e.currentTarget as HTMLDivElement;
+    const rect = target.getBoundingClientRect();
+    const startX = e.clientX - rect.left;
+    const startY = e.clientY - rect.top;
+    setDragging({ page: pageNumber, startX, startY, target });
+    setTempArea(prev => ({ ...prev, [pageNumber]: { x: startX, y: startY, width: 0, height: 0 } }));
+
+    const onMove = (ev: MouseEvent) => {
+      const r = target.getBoundingClientRect();
+      const x = ev.clientX - r.left;
+      const y = ev.clientY - r.top;
+      const width = Math.abs(x - startX);
+      const height = Math.abs(y - startY);
+      const left = Math.min(startX, x);
+      const top = Math.min(startY, y);
+      setTempArea(prev => ({ ...prev, [pageNumber]: { x: Math.max(0, left), y: Math.max(0, top), width, height } }));
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      const scale = scaleMapRef.current[pageNumber] || 1;
+      const a = (prevTemp => prevTemp[pageNumber])(tempArea);
+      const area = tempArea[pageNumber];
+      if (area && area.width > 10 && area.height > 10) {
+        onCropAreaChange(pageNumber, { x: area.x / scale, y: area.y / scale, width: area.width / scale, height: area.height / scale });
+      }
+      setTempArea(prev => ({ ...prev, [pageNumber]: undefined as any }));
+      setDragging(null);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [onCropAreaChange, scaleMapRef, tempArea]);
 
   const handleMouseMove = useCallback((pageNumber: number, e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragging || dragging.page !== pageNumber) return;
