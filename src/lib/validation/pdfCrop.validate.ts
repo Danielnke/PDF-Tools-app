@@ -119,8 +119,10 @@ export class PDFCropValidator {
       errors.push('File path is too long');
     }
 
-    // Check for invalid characters
-    const invalidChars = /[<>:"|?*\x00-\x1f]/;
+    // Check for invalid characters (exclude colon for Windows paths)
+    // Windows invalid chars: < > " | ? * and control characters
+    // Unix invalid chars: null character
+    const invalidChars = /[<>"|?*\x00-\x1f]/;
     if (invalidChars.test(filePath)) {
       errors.push('File path contains invalid characters');
     }
@@ -128,6 +130,12 @@ export class PDFCropValidator {
     // Check for path traversal attempts
     if (filePath.includes('..')) {
       errors.push('File path contains invalid sequence');
+    }
+
+    // Additional validation for common path formats
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    if (normalizedPath.includes('//')) {
+      errors.push('File path contains double slashes');
     }
 
     return {

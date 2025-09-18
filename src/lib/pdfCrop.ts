@@ -89,21 +89,37 @@ export class PDFCropService {
     crop: CropOptions,
     pageNumber: number
   ): Promise<CropResult> {
+    const startTime = Date.now();
     const { width: originalWidth, height: originalHeight } = page.getSize();
+    
+    console.log(`Cropping page ${pageNumber}: original=${originalWidth}x${originalHeight}, crop=${crop.x},${crop.y},${crop.width}x${crop.height}`);
     
     // Convert crop coordinates to PDF points if necessary
     const cropInPoints = this.convertToPDFPoints(crop, originalWidth, originalHeight);
     
+    console.log(`Converted crop coordinates: ${cropInPoints.x},${cropInPoints.y},${cropInPoints.width}x${cropInPoints.height}`);
+    
     // Validate crop area
     this.validateCropArea(cropInPoints, originalWidth, originalHeight);
 
-    // Apply crop by setting the media box
+    // Apply crop by setting the media box and crop box
+    // MediaBox defines the boundaries of the physical medium
     page.setMediaBox(
       cropInPoints.x,
       cropInPoints.y,
-      cropInPoints.width,
-      cropInPoints.height
+      cropInPoints.x + cropInPoints.width,
+      cropInPoints.y + cropInPoints.height
     );
+    
+    // CropBox defines the visible page content area
+    page.setCropBox(
+      cropInPoints.x,
+      cropInPoints.y,
+      cropInPoints.x + cropInPoints.width,
+      cropInPoints.y + cropInPoints.height
+    );
+
+    const processingTime = Date.now() - startTime;
 
     return {
       originalWidth,
@@ -117,7 +133,7 @@ export class PDFCropService {
         width: cropInPoints.width,
         height: cropInPoints.height,
       },
-      processingTime: 0,
+      processingTime,
     };
   }
 
@@ -133,8 +149,8 @@ export class PDFCropService {
 
     switch (crop.unit) {
       case 'px':
-        // Convert pixels to points (assuming 96 DPI screen)
-        const pxToPt = this.dpi / 96;
+        // Convert pixels to points (assuming 72 DPI for PDF, 96 DPI for screen)
+        const pxToPt = 72 / 96;
         x *= pxToPt;
         y *= pxToPt;
         width *= pxToPt;
@@ -161,15 +177,23 @@ export class PDFCropService {
         break;
     }
 
-    // Flip Y coordinate (PDF origin is bottom-left, UI origin is top-left)
-    y = pageHeight - y - height;
+    // CRITICAL FIX: Frontend sends coordinates in top-left origin system
+    // PDF uses bottom-left origin, so we need to flip Y coordinate
+    // The frontend already sends PDF coordinates, so we just need to flip Y
+    const flippedY = pageHeight - y - height;
+
+    // Ensure coordinates are within page bounds
+    const clampedX = Math.max(0, Math.min(x, pageWidth - width));
+    const clampedY = Math.max(0, Math.min(flippedY, pageHeight - height));
+    const clampedWidth = Math.max(0, Math.min(width, pageWidth - clampedX));
+    const clampedHeight = Math.max(0, Math.min(height, pageHeight - clampedY));
 
     return {
       ...crop,
-      x: Math.max(0, x),
-      y: Math.max(0, y),
-      width: Math.min(width, pageWidth - x),
-      height: Math.min(height, pageHeight - y),
+      x: clampedX,
+      y: clampedY,
+      width: clampedWidth,
+      height: clampedHeight,
       unit: 'pt',
     };
   }
@@ -188,15 +212,22 @@ export class PDFCropService {
     }
 
     if (crop.x + crop.width > pageWidth) {
-      throw new Error('Crop area extends beyond page width');
+      throw new Error(`Crop area extends beyond page width (${crop.x + crop.width} > ${pageWidth})`);
     }
 
     if (crop.y + crop.height > pageHeight) {
-      throw new Error('Crop area extends beyond page height');
+      throw new Error(`Crop area extends beyond page height (${crop.y + crop.height} > ${pageHeight})`);
     }
 
-    if (crop.width < 10 || crop.height < 10) {
-      throw new Error('Crop area too small (minimum 10x10 points)');
+    // Minimum size validation (5x5 points for better usability)
+    const minSize = 5;
+    if (crop.width < minSize || crop.height < minSize) {
+      throw new Error(`Crop area too small (minimum ${minSize}x${minSize} points)`);
+    }
+
+    // Maximum size validation (cannot be larger than page)
+    if (crop.width > pageWidth || crop.height > pageHeight) {
+      throw new Error('Crop area cannot be larger than the page');
     }
   }
 

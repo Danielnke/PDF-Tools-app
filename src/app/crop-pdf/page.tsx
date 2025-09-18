@@ -122,7 +122,7 @@ export default function CropPDFPage() {
     }));
   }, []);
 
-  const handleCrop = useCallback(async () => {
+  const handleCrop = useCallback(async (cropMode: 'single' | 'multiple' | 'all' | 'copy-to-all', selectedPages: number[], selectedCropAreas: { [pageNumber: number]: CropArea }) => {
     if (!uploadedFileData || !uploadedFile) {
       setError('No file selected for cropping');
       return;
@@ -134,15 +134,55 @@ export default function CropPDFPage() {
 
     try {
       // Convert crop areas to the format expected by the API
-      const crops = Object.entries(cropAreas)
-        .filter(([, cropArea]) => cropArea.width > 0 && cropArea.height > 0)
-        .map(([pageNumber, cropArea]) => ({
-          pageNumber: parseInt(pageNumber),
+      let crops;
+      
+      if (cropMode === 'single') {
+        // Single page mode - use the crop area for the current page
+        const pageNum = selectedPages[0];
+        const cropArea = selectedCropAreas[pageNum];
+        if (!cropArea || cropArea.width <= 0 || cropArea.height <= 0) {
+          setError('Please select a crop area by dragging on the PDF page');
+          return;
+        }
+        crops = [{
+          pageNumber: pageNum,
           x: cropArea.x,
           y: cropArea.y,
           width: cropArea.width,
           height: cropArea.height,
+          unit: 'pt' as const,
+        }];
+      } else if (cropMode === 'multiple') {
+        // Multiple pages mode - use individual crop areas for each selected page
+        crops = Object.entries(selectedCropAreas)
+          .filter(([pageNumber, cropArea]) => {
+            const pageNum = parseInt(pageNumber);
+            return selectedPages.includes(pageNum) && cropArea.width > 0 && cropArea.height > 0;
+          })
+          .map(([pageNumber, cropArea]) => ({
+            pageNumber: parseInt(pageNumber),
+            x: cropArea.x,
+            y: cropArea.y,
+            width: cropArea.width,
+            height: cropArea.height,
+            unit: 'pt' as const,
+          }));
+      } else { // 'all'
+        // All pages mode - use the first available crop area and apply it to all pages
+        const firstCropArea = Object.values(selectedCropAreas).find(area => area.width > 0 && area.height > 0);
+        if (!firstCropArea) {
+          setError('Please create a crop area by dragging on the PDF page');
+          return;
+        }
+        crops = selectedPages.map(pageNum => ({
+          pageNumber: pageNum,
+          x: firstCropArea.x,
+          y: firstCropArea.y,
+          width: firstCropArea.width,
+          height: firstCropArea.height,
+          unit: 'pt' as const,
         }));
+      }
 
       if (crops.length === 0) {
         setError('Please select at least one crop area by dragging on the PDF pages');
@@ -160,7 +200,7 @@ export default function CropPDFPage() {
         body: JSON.stringify({
           filePath: uploadedFileData.filePath,
           crops: crops,
-          applyToAllPages: false,
+          applyToAllPages: cropMode === 'all',
           maintainAspectRatio: false,
         }),
       });
@@ -200,7 +240,7 @@ export default function CropPDFPage() {
       setIsProcessing(false);
       setProcessingProgress(0);
     }
-  }, [uploadedFileData, uploadedFile, cropAreas]);
+  }, [uploadedFileData, uploadedFile]);
 
   const handleDownload = useCallback(async (downloadUrl: string, fileName: string) => {
     try {
