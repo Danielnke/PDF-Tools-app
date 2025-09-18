@@ -109,9 +109,9 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
   const targetPageWidth = 520; // smaller vertical preview
 
   return (
-    <div className="relative h-full w-full overflow-auto bg-background">
+    <div className="relative w-full bg-background">
       <Document file={file} loading={<div className="p-6 text-muted-foreground">Loading PDF…</div>}>
-        <div className="mx-auto w-full max-w-[720px] px-4 py-8 space-y-8">
+        <div className="mx-auto w-full max-w-[640px] px-4 py-10 space-y-10">
           {pageInfo.map(info => (
             <div key={info.pageNumber} className="relative mx-auto bg-white shadow-sm border border-border rounded-md overflow-hidden" style={{ width: "100%" }}>
               <div
