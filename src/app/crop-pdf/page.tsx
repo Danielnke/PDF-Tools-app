@@ -254,9 +254,9 @@ export default function CropPDFPage() {
 
           {/* Workspace: left controls, right continuous preview */}
           {uploadedFile && pageInfo.length > 0 && !result && (
-            <div className="h-full grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4">
               {/* Left Controls */}
-              <div className="bg-card border border-border rounded-lg p-4 space-y-4 h-full md:sticky md:top-4 md:self-start">
+              <div className="bg-card border border-border rounded-lg p-4 space-y-4 md:sticky md:top-4 md:self-start">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-2">Crop PDF</h3>
                   <p className="text-xs text-muted-foreground">Click and drag on the preview to select the area to keep.</p>
@@ -318,7 +318,7 @@ export default function CropPDFPage() {
               </div>
 
               {/* Right Continuous Preview */}
-              <div className="relative h-full rounded-lg border border-border bg-surface">
+              <div className="relative rounded-lg border border-border bg-surface">
                 <PdfViewerContinuous
                   file={uploadedFile}
                   pageInfo={pageInfo}
