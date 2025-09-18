@@ -130,9 +130,19 @@ export default function CropPDFPage() {
     setError(null);
 
     try {
+      const MIN_SIZE = 10; // match backend min size in points
+      // Filter out invalid/empty crop areas
+      const validEntries = Object.entries(cropAreas).filter(([, area]) =>
+        area && area.width >= MIN_SIZE && area.height >= MIN_SIZE
+      );
+
+      if (validEntries.length === 0) {
+        throw new Error('Please select a crop area of at least 10×10');
+      }
+
       // Convert crop areas to the format expected by the API
-      const cropData = Object.entries(cropAreas).map(([pageNumber, area]) => ({
-        pageNumber: parseInt(pageNumber),
+      const cropData = validEntries.map(([pageNumber, area]) => ({
+        pageNumber: parseInt(pageNumber, 10),
         cropArea: area
       }));
 
@@ -143,19 +153,28 @@ export default function CropPDFPage() {
         },
         body: JSON.stringify({
           filePath: uploadedFileData.filePath,
-          cropData: cropData,
+          cropData,
           cropMode: cropMode === 'all' ? 'all' : 'single',
-          selectedPages: selectedPages
+          selectedPages,
         }),
       });
 
-      const result = await response.json();
+      const serverJson = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to crop PDF');
+      if (!response.ok || serverJson?.success === false) {
+        throw new Error(serverJson?.error || 'Failed to crop PDF');
       }
 
-      setResult(result);
+      // Normalize to ResultsDisplay shape
+      const normalized = {
+        fileName: serverJson.fileName,
+        downloadUrl: serverJson.downloadUrl,
+        originalSize: serverJson.originalSize ?? 0,
+        croppedSize: serverJson.croppedSize ?? 0,
+        results: serverJson.results ?? [],
+      } as CropResult;
+
+      setResult(normalized);
       setProcessingProgress(100);
     } catch (error) {
       console.error('Crop error:', error);
