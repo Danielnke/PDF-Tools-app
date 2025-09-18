@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { FileUploadSection } from '@/components/crop-pdf/file-upload-section';
-import { PdfViewerSimple } from '@/components/crop-pdf/pdf-viewer-simple';
+import { PdfViewerContinuous } from '@/components/crop-pdf/pdf-viewer-continuous';
 import { ProcessingStatus } from '@/components/crop-pdf/processing-status';
 import { ResultsDisplay } from '@/components/crop-pdf/results-display';
 import { type CropArea, type PageInfo, type CropResult } from '@/lib/pdf-crop-utils';
@@ -130,9 +130,19 @@ export default function CropPDFPage() {
     setError(null);
 
     try {
+      const MIN_SIZE = 10; // match backend min size in points
+      // Filter out invalid/empty crop areas
+      const validEntries = Object.entries(cropAreas).filter(([, area]) =>
+        area && area.width >= MIN_SIZE && area.height >= MIN_SIZE
+      );
+
+      if (validEntries.length === 0) {
+        throw new Error('Please select a crop area of at least 10×10');
+      }
+
       // Convert crop areas to the format expected by the API
-      const cropData = Object.entries(cropAreas).map(([pageNumber, area]) => ({
-        pageNumber: parseInt(pageNumber),
+      const cropData = validEntries.map(([pageNumber, area]) => ({
+        pageNumber: parseInt(pageNumber, 10),
         cropArea: area
       }));
 
@@ -143,19 +153,28 @@ export default function CropPDFPage() {
         },
         body: JSON.stringify({
           filePath: uploadedFileData.filePath,
-          cropData: cropData,
+          cropData,
           cropMode: cropMode === 'all' ? 'all' : 'single',
-          selectedPages: selectedPages
+          selectedPages,
         }),
       });
 
-      const result = await response.json();
+      const serverJson = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to crop PDF');
+      if (!response.ok || serverJson?.success === false) {
+        throw new Error(serverJson?.error || 'Failed to crop PDF');
       }
 
-      setResult(result);
+      // Normalize to ResultsDisplay shape
+      const normalized = {
+        fileName: serverJson.fileName,
+        downloadUrl: serverJson.downloadUrl,
+        originalSize: serverJson.originalSize ?? 0,
+        croppedSize: serverJson.croppedSize ?? 0,
+        results: serverJson.results ?? [],
+      } as CropResult;
+
+      setResult(normalized);
       setProcessingProgress(100);
     } catch (error) {
       console.error('Crop error:', error);
@@ -233,19 +252,81 @@ export default function CropPDFPage() {
             </div>
           )}
 
-          {/* PDF Viewer */}
+          {/* Workspace: left controls, right continuous preview */}
           {uploadedFile && pageInfo.length > 0 && !result && (
-            <PdfViewerSimple
-              file={uploadedFile}
-              pageInfo={pageInfo}
-              currentPage={currentPage}
-              cropAreas={cropAreas}
-              onPageChange={setCurrentPage}
-              onCropAreaChange={handleCropAreaChange}
-              onRemoveFile={handleRemoveFile}
-              onCrop={handleCrop}
-              isProcessing={isProcessing}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4">
+              {/* Left Controls */}
+              <div className="bg-card border border-border rounded-lg p-4 space-y-4 md:sticky md:top-4 md:self-start">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Crop PDF</h3>
+                  <p className="text-xs text-muted-foreground">Click and drag on the preview to select the area to keep.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Pages</div>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm">
+                      <input type="radio" name="scope" checked={false} onChange={() => {}} /> All pages
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm">
+                      <input type="radio" name="scope" defaultChecked /> Current page
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground border border-transparent disabled:opacity-50"
+                    onClick={() => handleCrop('single', [currentPage], cropAreas)}
+                    disabled={isProcessing || !cropAreas[currentPage]}
+                  >
+                    Crop current page
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-2 text-sm font-medium border border-border hover:bg-accent disabled:opacity-50"
+                    onClick={() => {
+                      if (!cropAreas[currentPage]) return;
+                      const current = cropAreas[currentPage];
+                      const all: { [k: number]: any } = {};
+                      pageInfo.forEach(p => (all[p.pageNumber] = { ...current }));
+                      handleCrop('all', pageInfo.map(p => p.pageNumber), all);
+                    }}
+                    disabled={isProcessing || !cropAreas[currentPage]}
+                  >
+                    Apply to all pages
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-2 text-sm font-medium border border-border hover:bg-accent"
+                    onClick={() => setCropAreas({})}
+                  >
+                    Reset all
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-2 text-sm font-medium border border-border hover:bg-accent"
+                    onClick={() => setCropAreas(prev => ({ ...prev, [currentPage]: { x: 0, y: 0, width: 0, height: 0 } }))}
+                  >
+                    Clear current
+                  </button>
+                </div>
+
+                <div className="text-xs text-muted-foreground pt-2">
+                  Tip: Keep selections at least 10×10 for best results.
+                </div>
+              </div>
+
+              {/* Right Continuous Preview */}
+              <div className="relative rounded-lg border border-border bg-surface">
+                <PdfViewerContinuous
+                  file={uploadedFile}
+                  pageInfo={pageInfo}
+                  cropAreas={cropAreas}
+                  onCropAreaChange={handleCropAreaChange}
+                />
+              </div>
+            </div>
           )}
 
           {/* Processing Status */}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, writeFile, mkdir, rm } from 'fs/promises';
+import { readFile, writeFile, mkdir, rm, stat } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
@@ -93,14 +93,22 @@ export async function POST(request: NextRequest) {
       // Save the cropped PDF
       await writeFile(outputPath, croppedBytes);
 
-      // Calculate total processing info
+      // Calculate sizes and processing info
+      const [origStat, outStat] = await Promise.all([
+        stat(filePath),
+        stat(outputPath),
+      ]);
       const totalProcessingTime = results.reduce((sum, result) => sum + result.processingTime, 0);
-      const avgProcessingTime = totalProcessingTime / results.length;
+      const avgProcessingTime = results.length > 0 ? totalProcessingTime / results.length : 0;
+
+      const fileName = outputPath.split('/').pop() || `cropped-${uuidv4()}.pdf`;
 
       return NextResponse.json({
         success: true,
-        filePath: outputPath,
-        originalFile: filePath,
+        fileName,
+        downloadUrl: `/api/download/${fileName}`,
+        originalSize: origStat.size,
+        croppedSize: outStat.size,
         results: results.map(result => ({
           pageNumber: result.pageNumber,
           originalDimensions: {
