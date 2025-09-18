@@ -79,7 +79,8 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
 
   const handleMouseMove = useCallback((pageNumber: number, e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragging || dragging.page !== pageNumber) return;
-    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const target = dragging.target || (e.currentTarget as HTMLDivElement);
+    const rect = target.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const width = Math.abs(x - dragging.startX);
