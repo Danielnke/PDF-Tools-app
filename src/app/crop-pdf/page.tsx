@@ -252,19 +252,81 @@ export default function CropPDFPage() {
             </div>
           )}
 
-          {/* PDF Viewer */}
+          {/* Workspace: left controls, right continuous preview */}
           {uploadedFile && pageInfo.length > 0 && !result && (
-            <PdfViewerSimple
-              file={uploadedFile}
-              pageInfo={pageInfo}
-              currentPage={currentPage}
-              cropAreas={cropAreas}
-              onPageChange={setCurrentPage}
-              onCropAreaChange={handleCropAreaChange}
-              onRemoveFile={handleRemoveFile}
-              onCrop={handleCrop}
-              isProcessing={isProcessing}
-            />
+            <div className="h-full grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4">
+              {/* Left Controls */}
+              <div className="bg-card border border-border rounded-lg p-4 space-y-4 h-full md:sticky md:top-4 md:self-start">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Crop PDF</h3>
+                  <p className="text-xs text-muted-foreground">Click and drag on the preview to select the area to keep.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Pages</div>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm">
+                      <input type="radio" name="scope" checked={false} onChange={() => {}} /> All pages
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm">
+                      <input type="radio" name="scope" defaultChecked /> Current page
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground border border-transparent disabled:opacity-50"
+                    onClick={() => handleCrop('single', [currentPage], cropAreas)}
+                    disabled={isProcessing || !cropAreas[currentPage]}
+                  >
+                    Crop current page
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-2 text-sm font-medium border border-border hover:bg-accent disabled:opacity-50"
+                    onClick={() => {
+                      if (!cropAreas[currentPage]) return;
+                      const current = cropAreas[currentPage];
+                      const all: { [k: number]: any } = {};
+                      pageInfo.forEach(p => (all[p.pageNumber] = { ...current }));
+                      handleCrop('all', pageInfo.map(p => p.pageNumber), all);
+                    }}
+                    disabled={isProcessing || !cropAreas[currentPage]}
+                  >
+                    Apply to all pages
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-2 text-sm font-medium border border-border hover:bg-accent"
+                    onClick={() => setCropAreas({})}
+                  >
+                    Reset all
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-md bg-transparent px-3 py-2 text-sm font-medium border border-border hover:bg-accent"
+                    onClick={() => setCropAreas(prev => ({ ...prev, [currentPage]: { x: 0, y: 0, width: 0, height: 0 } }))}
+                  >
+                    Clear current
+                  </button>
+                </div>
+
+                <div className="text-xs text-muted-foreground pt-2">
+                  Tip: Keep selections at least 10×10 for best results.
+                </div>
+              </div>
+
+              {/* Right Continuous Preview */}
+              <div className="relative h-full rounded-lg border border-border bg-surface">
+                <PdfViewerContinuous
+                  file={uploadedFile}
+                  pageInfo={pageInfo}
+                  cropAreas={cropAreas}
+                  onCropAreaChange={handleCropAreaChange}
+                />
+              </div>
+            </div>
           )}
 
           {/* Processing Status */}
