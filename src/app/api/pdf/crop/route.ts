@@ -10,7 +10,19 @@ export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
   
   try {
-    const { filePath, crops, applyToAllPages, maintainAspectRatio } = await request.json();
+    const { filePath, cropData, cropMode, selectedPages } = await request.json();
+
+    // Convert to legacy format for compatibility
+    const crops = cropData?.map((item: any) => ({
+      pageNumber: item.pageNumber,
+      x: item.cropArea.x,
+      y: item.cropArea.y,
+      width: item.cropArea.width,
+      height: item.cropArea.height,
+      unit: item.cropArea.unit || 'pt'
+    })) || [];
+
+    const applyToAllPages = cropMode === 'all';
 
     // Validate file path
     const filePathValidation = PDFCropValidator.validateFilePath(filePath);
@@ -25,7 +37,7 @@ export async function POST(request: NextRequest) {
     const cropOptions: MultiCropOptions = {
       crops: crops || [],
       applyToAllPages: applyToAllPages || false,
-      maintainAspectRatio: maintainAspectRatio || false,
+      maintainAspectRatio: false,
     };
 
     const validationResult = PDFCropValidator.validateMultiCropOptions(cropOptions);
