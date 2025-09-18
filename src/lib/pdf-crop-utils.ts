@@ -1,5 +1,3 @@
-import type { pdfjs } from 'react-pdf';
-
 export interface CropArea {
   x: number;
   y: number;
@@ -30,6 +28,11 @@ export async function analyzePDF(file: File): Promise<PageInfo[]> {
   // Dynamic import to avoid SSR issues
   const { pdfjs } = await import('react-pdf');
   
+  // Configure worker source to use local file
+  if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+  }
+  
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
   
@@ -57,11 +60,19 @@ export function calculateScaledCropArea(
   const scaleX = pageWidth / canvasWidth;
   const scaleY = pageHeight / canvasHeight;
   
+  // Compute clamped coordinates first
+  const clampedX = Math.max(0, cropArea.x * scaleX);
+  const clampedY = Math.max(0, cropArea.y * scaleY);
+  
+  // Compute width and height using clamped values, ensuring non-negative results
+  const width = Math.max(0, Math.min(cropArea.width * scaleX, pageWidth - clampedX));
+  const height = Math.max(0, Math.min(cropArea.height * scaleY, pageHeight - clampedY));
+  
   return {
-    x: Math.max(0, cropArea.x * scaleX),
-    y: Math.max(0, cropArea.y * scaleY),
-    width: Math.min(cropArea.width * scaleX, pageWidth - cropArea.x * scaleX),
-    height: Math.min(cropArea.height * scaleY, pageHeight - cropArea.y * scaleY),
+    x: clampedX,
+    y: clampedY,
+    width: width,
+    height: height,
   };
 }
 
@@ -73,6 +84,11 @@ export async function cropPDF(
   try {
     // Dynamic import to avoid SSR issues
     const { pdfjs } = await import('react-pdf');
+    
+    // Configure worker source to use local file
+    if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+    }
     
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
@@ -93,7 +109,10 @@ export async function cropPDF(
       
       // Create canvas for original page
       const originalCanvas = document.createElement('canvas');
-      const originalCtx = originalCanvas.getContext('2d')!;
+      const originalCtx = originalCanvas.getContext('2d');
+      if (!originalCtx) {
+        throw new Error('2D context unavailable for original canvas');
+      }
       originalCanvas.width = viewport.width;
       originalCanvas.height = viewport.height;
       
@@ -104,7 +123,10 @@ export async function cropPDF(
       
       // Create canvas for cropped area
       const croppedCanvas = document.createElement('canvas');
-      const croppedCtx = croppedCanvas.getContext('2d')!;
+      const croppedCtx = croppedCanvas.getContext('2d');
+      if (!croppedCtx) {
+        throw new Error('2D context unavailable for cropped canvas');
+      }
       croppedCanvas.width = cropArea.width;
       croppedCanvas.height = cropArea.height;
       

@@ -1,14 +1,25 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { MainLayout } from '@/components/layout/main-layout';
 import { FileUploadSection } from '@/components/crop-pdf/file-upload-section';
 import { PdfViewer } from '@/components/crop-pdf/pdf-viewer';
 import { ProcessingStatus } from '@/components/crop-pdf/processing-status';
 import { ResultsDisplay } from '@/components/crop-pdf/results-display';
-import { analyzePDF, cropPDF, type CropArea, type PageInfo, type CropResult } from '@/lib/pdf-crop-utils';
+import { type CropArea, type PageInfo, type CropResult } from '@/lib/pdf-crop-utils';
+
+interface UploadedFileData {
+  id: string;
+  originalName: string;
+  fileName: string;
+  filePath: string;
+  size: number;
+  type: string;
+}
 
 export default function CropPDFPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFileData, setUploadedFileData] = useState<UploadedFileData | null>(null);
   const [pageInfo, setPageInfo] = useState<PageInfo[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [cropAreas, setCropAreas] = useState<{ [pageNumber: number]: CropArea }>({});
@@ -22,21 +33,18 @@ export default function CropPDFPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       import('react-pdf').then(({ pdfjs }) => {
-        pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+        // Use a local worker source instead of external CDN to avoid CORS issues
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+        console.log('PDF.js worker configured successfully');
+      }).catch(error => {
+        console.error('Failed to configure PDF.js worker:', error);
+        setError('Failed to initialize PDF viewer. Please refresh the page.');
       });
     }
   }, []);
 
-  const handleFileDrop = useCallback(async (files: File[]) => {
-    if (files.length === 0) return;
-    
-    const file = files[0];
-    if (file.type !== 'application/pdf') {
-      setError('Please upload a PDF file');
-      return;
-    }
-
-    setUploadedFile(file);
+  const handleFileUploaded = useCallback(async (fileData: UploadedFileData) => {
+    setUploadedFileData(fileData);
     setError(null);
     setResult(null);
     setCropAreas({});
@@ -44,11 +52,53 @@ export default function CropPDFPage() {
     setIsAnalyzing(true);
 
     try {
-      const pages = await analyzePDF(file);
-      setPageInfo(pages);
+      // For the crop functionality, we need to read the actual file from the upload
+      // Create a File object from the original file in memory
+      const originalFileData = fileData;
+      
+      // Read the file from the server path for analysis
+      const response = await fetch(`/api/pdf/crop?filePath=${encodeURIComponent(originalFileData.filePath)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      
+      const analysisData = await response.json();
+      
+      if (analysisData.success) {
+        const pages: PageInfo[] = analysisData.pageDimensions.map((dim: { pageNumber: number; width: number; height: number }) => ({
+          pageNumber: dim.pageNumber,
+          width: dim.width,
+          height: dim.height,
+        }));
+        setPageInfo(pages);
+        
+        // For display purposes, we'll fetch the file blob
+        const fileResponse = await fetch(`/api/download/${originalFileData.fileName}`);
+        if (fileResponse.ok) {
+          const blob = await fileResponse.blob();
+          const file = new File([blob], originalFileData.originalName, { type: 'application/pdf' });
+          setUploadedFile(file);
+        } else {
+          throw new Error('Failed to load PDF file for viewing');
+        }
+      } else {
+        throw new Error(analysisData.error || 'Failed to analyze PDF');
+      }
     } catch (error) {
       console.error('Error analyzing PDF:', error);
-      setError('Failed to analyze PDF file');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to analyze PDF file: ${errorMessage}`);
+      // Clean up on error
+      setUploadedFileData(null);
+      setUploadedFile(null);
+      setPageInfo([]);
     } finally {
       setIsAnalyzing(false);
     }
@@ -56,6 +106,7 @@ export default function CropPDFPage() {
 
   const handleRemoveFile = useCallback(() => {
     setUploadedFile(null);
+    setUploadedFileData(null);
     setPageInfo([]);
     setCurrentPage(1);
     setCropAreas({});
@@ -72,54 +123,130 @@ export default function CropPDFPage() {
   }, []);
 
   const handleCrop = useCallback(async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFileData || !uploadedFile) {
+      setError('No file selected for cropping');
+      return;
+    }
 
     setIsProcessing(true);
     setProcessingProgress(0);
     setError(null);
 
     try {
-      const cropResult = await cropPDF(uploadedFile, cropAreas, (progress) => {
-        setProcessingProgress(progress);
+      // Convert crop areas to the format expected by the API
+      const crops = Object.entries(cropAreas)
+        .filter(([, cropArea]) => cropArea.width > 0 && cropArea.height > 0)
+        .map(([pageNumber, cropArea]) => ({
+          pageNumber: parseInt(pageNumber),
+          x: cropArea.x,
+          y: cropArea.y,
+          width: cropArea.width,
+          height: cropArea.height,
+        }));
+
+      if (crops.length === 0) {
+        setError('Please select at least one crop area by dragging on the PDF pages');
+        return;
+      }
+
+      setProcessingProgress(25);
+
+      // Use the server-side cropping API
+      const response = await fetch('/api/pdf/crop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filePath: uploadedFileData.filePath,
+          crops: crops,
+          applyToAllPages: false,
+          maintainAspectRatio: false,
+        }),
       });
-      setResult(cropResult);
+
+      setProcessingProgress(75);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Create a download URL for the cropped file
+        const fileName = result.filePath.split('/').pop() || 'cropped.pdf';
+        const downloadUrl = `/api/download/${fileName}`;
+        
+        const cropResult: CropResult = {
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+          originalSize: uploadedFileData.size,
+          croppedSize: result.fileSize || uploadedFileData.size,
+          results: result.results,
+        };
+        
+        setResult(cropResult);
+        setProcessingProgress(100);
+      } else {
+        throw new Error(result.error || 'Failed to crop PDF');
+      }
     } catch (error) {
       console.error('Error cropping PDF:', error);
-      setError(error instanceof Error ? error.message : 'Failed to crop PDF');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to crop PDF';
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
       setProcessingProgress(0);
     }
-  }, [uploadedFile, cropAreas]);
+  }, [uploadedFileData, uploadedFile, cropAreas]);
 
-  const handleDownload = useCallback((downloadUrl: string, fileName: string) => {
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clean up the URL after download
-    setTimeout(() => {
-      URL.revokeObjectURL(downloadUrl);
-    }, 1000);
+  const handleDownload = useCallback(async (downloadUrl: string, fileName: string) => {
+    try {
+      // Use the API download endpoint
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (error) {
+      console.error('Download error:', error);
+      setError('Failed to download file');
+    }
   }, []);
 
   const handleReset = useCallback(() => {
     setUploadedFile(null);
+    setUploadedFileData(null);
     setPageInfo([]);
     setCurrentPage(1);
     setCropAreas({});
     setResult(null);
     setError(null);
     setIsAnalyzing(false);
+    setIsProcessing(false);
+    setProcessingProgress(0);
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <MainLayout>
       <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-foreground">PDF Crop Tool</h1>
@@ -131,7 +258,7 @@ export default function CropPDFPage() {
           {/* File Upload Section */}
           {!uploadedFile && !result && (
             <FileUploadSection
-              onFileDrop={handleFileDrop}
+              onFileUploaded={handleFileUploaded}
               isAnalyzing={isAnalyzing}
             />
           )}
@@ -169,46 +296,8 @@ export default function CropPDFPage() {
             />
           )}
 
-          {/* Feature Highlights */}
-          {!uploadedFile && !result && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-              <div className="text-center space-y-2 p-4 bg-card rounded-lg border">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.122 2.122" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold">Visual Selection</h3>
-                <p className="text-sm text-muted-foreground">
-                  Click and drag to select crop areas directly on the PDF preview
-                </p>
-              </div>
-              <div className="text-center space-y-2 p-4 bg-card rounded-lg border">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold">Multi-Page Support</h3>
-                <p className="text-sm text-muted-foreground">
-                  Crop different areas on each page or apply the same crop to all pages
-                </p>
-              </div>
-              <div className="text-center space-y-2 p-4 bg-card rounded-lg border">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold">Real-time Preview</h3>
-                <p className="text-sm text-muted-foreground">
-                  See exactly what will be cropped before processing your PDF
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }

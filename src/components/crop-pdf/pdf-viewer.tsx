@@ -8,12 +8,26 @@ import {
   ZoomIn,
   ZoomOut,
   Move,
-  MousePointer
+  Crop
 } from 'lucide-react';
+
+// Import react-pdf CSS for TextLayer and AnnotationLayer
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
 
 // Dynamically import react-pdf components to avoid SSR issues
 const Document = dynamic(() => import('react-pdf').then(mod => mod.Document), { ssr: false });
 const Page = dynamic(() => import('react-pdf').then(mod => mod.Page), { ssr: false });
+
+// Configure PDF.js worker on client side only
+if (typeof window !== 'undefined') {
+  import('react-pdf').then(({ pdfjs }) => {
+    // Use local worker to avoid CORS and CDN issues
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+  }).catch(error => {
+    console.error('Failed to configure PDF.js worker:', error);
+  });
+}
 
 interface CropArea {
   x: number;
@@ -56,11 +70,19 @@ export function PdfViewer({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [currentCropArea, setCurrentCropArea] = useState<CropArea | null>(null);
-  const [tool, setTool] = useState<'select' | 'move' | 'zoom'>('select');
+  const [tool, setTool] = useState<'crop' | 'move' | 'zoom'>('crop');
   const [zoom, setZoom] = useState(1);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (tool !== 'select') return;
+    if (tool !== 'crop') return;
+    
+    // Prevent text selection and default browser behavior
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Starting crop selection - make sure to drag a reasonable area (minimum 5x5 pixels)');
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -69,17 +91,25 @@ export function PdfViewer({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
+    console.log(`Mouse down at: ${x}, ${y} on canvas size: ${canvasSize.width}x${canvasSize.height}`);
+    
     setIsDragging(true);
     setDragStart({ x, y });
     
     const currentPageInfo = pageInfo[currentPage - 1];
     if (currentPageInfo) {
+      // Convert canvas coordinates to PDF coordinates
       const scaleX = currentPageInfo.width / canvasSize.width;
       const scaleY = currentPageInfo.height / canvasSize.height;
       
+      const scaledX = x * scaleX;
+      const scaledY = y * scaleY;
+      
+      console.log(`Scaled coordinates: ${scaledX}, ${scaledY} on PDF size: ${currentPageInfo.width}x${currentPageInfo.height}`);
+      
       setCurrentCropArea({
-        x: x * scaleX,
-        y: y * scaleY,
+        x: scaledX,
+        y: scaledY,
         width: 0,
         height: 0
       });
@@ -87,7 +117,7 @@ export function PdfViewer({
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || tool !== 'select') return;
+    if (!isDragging || tool !== 'crop') return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -107,14 +137,22 @@ export function PdfViewer({
         height: Math.abs(y - dragStart.y) * scaleY,
       };
       
-      setCurrentCropArea(newCropArea);
-      drawCanvas(newCropArea);
+      // Only update if area is large enough to be a valid crop
+      if (newCropArea.width > 5 && newCropArea.height > 5) {
+        setCurrentCropArea(newCropArea);
+        drawCanvas(newCropArea);
+      }
     }
   };
 
   const handleCanvasMouseUp = () => {
-    if (isDragging && currentCropArea) {
+    if (isDragging && currentCropArea && currentCropArea.width > 0 && currentCropArea.height > 0) {
+      console.log(`Final crop area: x=${currentCropArea.x}, y=${currentCropArea.y}, width=${currentCropArea.width}, height=${currentCropArea.height}`);
       onCropAreaChange(currentPage, currentCropArea);
+    } else if (isDragging) {
+      console.log('Crop area too small, clearing selection');
+      setCurrentCropArea(null);
+      drawCanvas();
     }
     setIsDragging(false);
   };
@@ -124,7 +162,10 @@ export function PdfViewer({
     if (!canvas || pageInfo.length === 0) return;
     
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('Failed to get 2D context from canvas');
+      return;
+    }
     
     const currentPageInfo = pageInfo[currentPage - 1];
     if (!currentPageInfo) return;
@@ -137,6 +178,7 @@ export function PdfViewer({
     
     // Draw crop area if exists
     if (cropArea && cropArea.width > 0 && cropArea.height > 0) {
+      // Convert PDF coordinates to canvas coordinates
       const scaleX = canvasSize.width / currentPageInfo.width;
       const scaleY = canvasSize.height / currentPageInfo.height;
       
@@ -164,21 +206,61 @@ export function PdfViewer({
       const canvas = canvasRef.current;
       const currentPageInfo = pageInfo[currentPage - 1];
       if (currentPageInfo) {
-        // Set canvas size based on page dimensions
-        const maxWidth = 800;
-        const maxHeight = 600;
-        const scale = Math.min(maxWidth / currentPageInfo.width, maxHeight / currentPageInfo.height, 1);
+        // Set canvas size to properly display PDF at readable size
+        const container = canvas.parentElement;
+        const maxContainerWidth = container ? Math.min(container.clientWidth - 32, 1000) : 800;
+        const maxHeight = Math.min(window.innerHeight - 300, 1000);
         
-        const newWidth = currentPageInfo.width * scale;
-        const newHeight = currentPageInfo.height * scale;
+        // Calculate optimal scale - prioritize readability over fitting exactly
+        const widthScale = maxContainerWidth / currentPageInfo.width;
+        const heightScale = maxHeight / currentPageInfo.height;
+        const scale = Math.min(widthScale, heightScale, 1.5); // Allow up to 1.5x scaling for readability
+        
+        // Ensure minimum readable size
+        const minScale = 0.5;
+        const finalScale = Math.max(scale, minScale);
+        
+        const newWidth = Math.floor(currentPageInfo.width * finalScale);
+        const newHeight = Math.floor(currentPageInfo.height * finalScale);
         
         setCanvasSize({ width: newWidth, height: newHeight });
         canvas.width = newWidth;
         canvas.height = newHeight;
         
+        console.log(`Canvas initialized: ${newWidth}x${newHeight}, PDF: ${currentPageInfo.width}x${currentPageInfo.height}, Scale: ${finalScale}`);
+        
         drawCanvas(cropAreas[currentPage]);
       }
     }
+  }, [pageInfo, currentPage, cropAreas]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (pageInfo.length > 0 && canvasRef.current) {
+        const canvas = canvasRef.current;
+        const currentPageInfo = pageInfo[currentPage - 1];
+        if (currentPageInfo) {
+          const container = canvas.parentElement;
+          const maxContainerWidth = container ? Math.min(container.clientWidth - 32, 900) : 800;
+          const maxHeight = Math.min(window.innerHeight - 400, 800);
+          const widthScale = maxContainerWidth / currentPageInfo.width;
+          const heightScale = maxHeight / currentPageInfo.height;
+          const scale = Math.min(widthScale, heightScale, 1);
+          
+          const newWidth = Math.floor(currentPageInfo.width * scale);
+          const newHeight = Math.floor(currentPageInfo.height * scale);
+          
+          setCanvasSize({ width: newWidth, height: newHeight });
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          
+          drawCanvas(cropAreas[currentPage]);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [pageInfo, currentPage, cropAreas]);
 
   return (
@@ -209,12 +291,19 @@ export function PdfViewer({
         
         {/* Tool Selection */}
         <div className="flex items-center gap-2">
+          {tool === 'crop' && (
+            <span className="text-sm text-blue-600 font-medium">Crop Mode: Click and drag to select area</span>
+          )}
           <Button
             size="sm"
-            variant={tool === 'select' ? 'default' : 'outline'}
-            onClick={() => setTool('select')}
+            variant={tool === 'crop' ? 'default' : 'outline'}
+            onClick={() => {
+              setTool('crop');
+              console.log('Crop mode activated - Click and drag on the PDF to create crop area');
+            }}
+            title="Crop Tool - Click and drag to select crop area"
           >
-            <MousePointer className="h-4 w-4" />
+            <Crop className="h-4 w-4" />
           </Button>
           <Button
             size="sm"
@@ -271,30 +360,88 @@ export function PdfViewer({
       {/* Canvas */}
 
       {/* PDF Rendering and Canvas */}
-      <div className="border border-border rounded-lg p-4 bg-muted/30">
-        <div className="relative flex justify-center">
-          {file && (
-            <div className="absolute inset-0">
-              <Document file={file}>
+      <div className="border border-border rounded-lg p-4 bg-muted/30 overflow-hidden">
+        <div className="relative flex justify-center items-center min-h-[400px]">
+          {file && !pdfError && (
+            <div className="relative">
+              <Document 
+                file={file}
+                onLoadSuccess={() => {
+                  setIsLoading(false);
+                  setPdfError(null);
+                }}
+                onLoadError={(error) => {
+                  console.error('PDF load error:', error);
+                  setPdfError('Failed to load PDF file');
+                  setIsLoading(false);
+                }}
+                loading={
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-muted-foreground">Loading PDF...</div>
+                  </div>
+                }
+                error={
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-error">Failed to load PDF</div>
+                  </div>
+                }
+              >
                 <Page
                   pageNumber={currentPage}
                   width={canvasSize.width}
-                  height={canvasSize.height}
                   renderMode="canvas"
-                  className="border border-border rounded"
+                  onLoadSuccess={() => {
+                    drawCanvas(cropAreas[currentPage]);
+                  }}
+                  onLoadError={(error) => {
+                    console.error('Page load error:', error);
+                    setPdfError(`Failed to load page ${currentPage}`);
+                  }}
+                  loading={
+                    <div className="flex items-center justify-center" style={{ width: canvasSize.width, height: canvasSize.height }}>
+                      <div className="text-muted-foreground">Loading page...</div>
+                    </div>
+                  }
+                  error={
+                    <div className="flex items-center justify-center" style={{ width: canvasSize.width, height: canvasSize.height }}>
+                      <div className="text-error">Failed to load page</div>
+                    </div>
+                  }
                 />
               </Document>
+              
+              {!pdfError && (
+                <canvas
+                  ref={canvasRef}
+                  className={`absolute inset-0 border-2 border-dashed border-blue-500 rounded pointer-events-auto ${tool === 'crop' ? 'cursor-crosshair' : 'cursor-default'}`}
+                  style={{ backgroundColor: 'transparent', userSelect: 'none' }}
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  onMouseLeave={handleCanvasMouseUp}
+                />
+              )}
             </div>
           )}
-          <canvas
-            ref={canvasRef}
-            className="border border-border rounded cursor-crosshair relative z-10"
-            style={{ maxWidth: '100%', height: 'auto', backgroundColor: 'transparent' }}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-          />
+          
+          {pdfError && (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-error text-center">
+                <div>{pdfError}</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setPdfError(null);
+                    setIsLoading(true);
+                  }}
+                  className="mt-2"
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
