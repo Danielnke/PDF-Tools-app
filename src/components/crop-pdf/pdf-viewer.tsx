@@ -7,7 +7,6 @@ import {
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Crop,
   RotateCw
 } from 'lucide-react';
 
@@ -70,7 +69,6 @@ export function PdfViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [cropMode, setCropMode] = useState<CropMode>('copy-to-all');
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [rotation, setRotation] = useState(0);
@@ -490,13 +488,11 @@ export function PdfViewer({
                 <Document 
                   file={file}
                   onLoadSuccess={() => {
-                    setIsLoading(false);
                     setPdfError(null);
                   }}
                   onLoadError={(error) => {
                     console.error('PDF load error:', error);
                     setPdfError('Failed to load PDF file');
-                    setIsLoading(false);
                   }}
                   loading={
                     <div className="flex items-center justify-center py-8">
@@ -510,7 +506,7 @@ export function PdfViewer({
                   }
                 >
                   {/* Render pages with clean display */}
-                  {pageInfo.map((page, index) => {
+                  {pageInfo.map((page) => {
                     const pageNumber = page.pageNumber;
                     const isCurrentPage = pageNumber === currentPage;
                     
@@ -587,7 +583,6 @@ export function PdfViewer({
                       variant="outline"
                       onClick={() => {
                         setPdfError(null);
-                        setIsLoading(true);
                       }}
                       className="mt-2"
                     >

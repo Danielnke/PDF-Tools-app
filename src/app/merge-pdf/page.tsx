@@ -75,7 +75,7 @@ export default function MergePdfPage() {
           prev.map((file) => ({ ...file, status: 'error' }))
         );
       }
-    } catch (err) {
+    } catch {
       setError('Failed to upload files');
       setFiles((prev) => 
         prev.map((file) => ({ ...file, status: 'error' }))
@@ -119,7 +119,7 @@ export default function MergePdfPage() {
       } else {
         setError(response.message || 'Merge failed');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to merge PDFs');
     } finally {
       setIsProcessing(false);

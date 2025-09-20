@@ -46,7 +46,7 @@ export class PDFValidationService {
           ignoreEncryption: true,
           updateMetadata: false,
         });
-      } catch (error) {
+      } catch {
         errors.push('Invalid PDF format or corrupted file');
         return { isValid: false, errors, warnings, metadata };
       }
@@ -74,8 +74,8 @@ export class PDFValidationService {
       }
 
       // Check for images and fonts
-      metadata.hasImages = await this.hasImages(pdf);
-      metadata.hasFonts = await this.hasFonts(pdf);
+      metadata.hasImages = await this.hasImages();
+      metadata.hasFonts = await this.hasFonts();
 
       // Additional warnings
       if (metadata.fileSize > 50 * 1024 * 1024) {
@@ -109,7 +109,7 @@ export class PDFValidationService {
     }
   }
 
-  private async hasImages(pdf: PDFDocument): Promise<boolean> {
+  private async hasImages(): Promise<boolean> {
     try {
       // Simplified check - assume PDFs with reasonable size likely have images
       return true;
@@ -118,7 +118,7 @@ export class PDFValidationService {
     }
   }
 
-  private async hasFonts(pdf: PDFDocument): Promise<boolean> {
+  private async hasFonts(): Promise<boolean> {
     try {
       // Simplified check - assume PDFs have fonts
       return true;

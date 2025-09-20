@@ -8,8 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pdfApi } from '@/lib/api-client/pdf-api';
-import { Upload, Download, FileText, AlertCircle, CheckCircle, Scissors } from 'lucide-react';
-import { PDF_TOOLS } from '@/lib/constants/tools';
+import { Upload, Download, FileText, AlertCircle, Scissors } from 'lucide-react';
 import { ProcessedFile } from '@/types/api';
 
 interface UploadedFile extends ProcessedFile {
@@ -34,7 +33,6 @@ export default function SplitPdfPage() {
   const [results, setResults] = useState<SplitResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploadDir, setUploadDir] = useState<string>('');
-  const [outputDir, setOutputDir] = useState<string>('');
   const [splitMode, setSplitMode] = useState<'range' | 'individual'>('individual');
   const [pageRanges, setPageRanges] = useState<string>('');
 
@@ -118,7 +116,7 @@ export default function SplitPdfPage() {
       } else {
         throw new Error('Upload failed');
       }
-    } catch (err) {
+    } catch {
       setFile(prev => prev ? { ...prev, status: 'error' } : null);
       setError('Failed to upload file. Please try again.');
     }
@@ -165,9 +163,6 @@ export default function SplitPdfPage() {
           filePath: f.filePath || ''
         }));
         setResults(splitResults);
-        if (outputDirectory) {
-          setOutputDir(outputDirectory);
-        }
       } else {
         console.error('Split failed - no files returned:', result);
         throw new Error(result.message || 'Split failed - no files were created');

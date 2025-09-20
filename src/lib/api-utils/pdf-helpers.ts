@@ -101,7 +101,7 @@ export class PdfProcessor {
     for (const filePath of filePaths) {
       try {
         await unlink(filePath);
-      } catch (error) {
+      } catch {
         console.warn(`Could not delete file: ${filePath}`);
       }
     }
