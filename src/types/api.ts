@@ -81,6 +81,20 @@ export interface ConvertResponse {
   downloadUrl: string;
 }
 
+export interface RotateRequest {
+  filePath: string;
+  angle: number; // allowed: -270, -180, -90, 90, 180, 270
+  pages?: number[]; // if omitted, rotate all pages
+}
+
+export interface RotateResponse {
+  message: string;
+  fileName: string;
+  filePath: string;
+  downloadUrl: string;
+  rotatedPages: number[];
+}
+
 // General API Response Types
 export interface ApiResponse<T = unknown> {
   success: boolean;
