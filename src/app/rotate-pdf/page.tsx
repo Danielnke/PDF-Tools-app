@@ -118,6 +118,20 @@ export default function RotatePdfPage() {
           progress: 100,
         });
         setUploadDir(uploadResult.data.uploadDir);
+
+        // Load file for preview
+        try {
+          const response = await fetch(`/api/download/${uploadedFile.fileName}`);
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            setPreviewUrl((prev) => {
+              if (prev) URL.revokeObjectURL(prev);
+              return url;
+            });
+            setPreviewPage(1);
+          }
+        } catch {}
       } else {
         throw new Error(uploadResult.message || 'Upload failed');
       }
