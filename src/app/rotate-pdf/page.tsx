@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pdfApi } from '@/lib/api-client/pdf-api';
 import { Upload, Download, RotateCw, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Document, Page } from 'react-pdf';
 
 interface UploadedFile {
   id: string;
@@ -326,7 +327,7 @@ export default function RotatePdfPage() {
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div>
               <h4 className="font-semibold mb-2">90° Increments</h4>
-              <p className="text-sm text-muted-foreground">Rotate clockwise, counter-clockwise, or 180°</p>
+              <p className="text-sm text-muted-foreground">Rotate clockwise, counter-clockwise, or 180��</p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">Selected Pages</h4>
