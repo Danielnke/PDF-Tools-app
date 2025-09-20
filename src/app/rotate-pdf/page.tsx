@@ -336,7 +336,17 @@ export default function RotatePdfPage() {
                           )}
                         </div>
 
-                        <div className="bg-surface border border-border rounded-lg p-3 overflow-auto">
+                        <div
+                          className="bg-surface border border-border rounded-lg p-3 overflow-auto"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'ArrowLeft') {
+                              setPreviewPage((p) => Math.max(1, p - 1));
+                            } else if (e.key === 'ArrowRight') {
+                              setPreviewPage((p) => Math.min(numPages, p + 1));
+                            }
+                          }}
+                        >
                           {previewUrl ? (
                             <Document
                               file={previewUrl}
