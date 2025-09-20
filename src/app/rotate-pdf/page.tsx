@@ -211,6 +211,12 @@ export default function RotatePdfPage() {
     setIsProcessing(false);
     setPagesInput('');
     setAngle(90);
+    setNumPages(0);
+    setPreviewPage(1);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   };
 
   return (
