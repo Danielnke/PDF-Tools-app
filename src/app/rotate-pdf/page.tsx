@@ -308,18 +308,30 @@ export default function RotatePdfPage() {
                             <p className="text-xs text-muted-foreground mt-1">Leave empty to rotate all pages</p>
                           </div>
 
-                          {numPages > 1 && previewUrl && (
+                          {numPages > 0 && previewUrl && (
                             <div>
                               <label className="block text-sm font-medium mb-2">Preview Page</label>
-                              <input
-                                type="range"
-                                min={1}
-                                max={numPages}
-                                value={previewPage}
-                                onChange={(e) => setPreviewPage(parseInt(e.target.value, 10))}
-                                className="w-full"
-                              />
-                              <div className="text-xs text-muted-foreground mt-1">Page {previewPage} of {numPages}</div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setPreviewPage((p) => Math.max(1, p - 1))}
+                                  disabled={isProcessing || previewPage <= 1}
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <div className="text-sm text-muted-foreground min-w-[90px] text-center">
+                                  {previewPage} / {numPages}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setPreviewPage((p) => Math.min(numPages, p + 1))}
+                                  disabled={isProcessing || previewPage >= numPages}
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>
