@@ -86,7 +86,7 @@ export class PDFCompressionService {
         if (settings.grayscale) pipeline = pipeline.grayscale();
 
         const jpegBuffer = await pipeline
-          .jpeg({ quality: settings.jpegQuality, chromaSubsampling: settings.chromaSubsampling })
+          .jpeg({ quality: settings.jpegQuality, chromaSubsampling: settings.chromaSubsampling, mozjpeg: true })
           .toBuffer();
 
         // Embed image into new PDF page preserving original page size
