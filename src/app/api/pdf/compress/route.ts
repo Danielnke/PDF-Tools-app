@@ -55,14 +55,15 @@ export async function POST(request: NextRequest) {
 
       await writeFile(outputPath, compressedBytes);
 
+      const dirName = outputDir.split(/[\\/]/).pop() || '';
       return NextResponse.json({
         message: 'PDF compressed successfully',
-        fileName: `compressed-${uuidv4()}.pdf`,
+        fileName: outputFileName,
         filePath: outputPath,
         originalSize: result.originalSize,
         compressedSize: result.compressedSize,
         compressionRatio: `${result.compressionRatio.toFixed(2)}%`,
-        downloadUrl: `/api/download/${result.compressionRatio.toFixed(2)}%.pdf`,
+        downloadUrl: `/api/download/${outputFileName}?dir=${dirName}`,
         qualityLevel: result.qualityLevel,
         techniquesApplied: result.techniquesApplied,
         processingTime: result.processingTime,
