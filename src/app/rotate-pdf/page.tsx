@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pdfApi } from '@/lib/api-client/pdf-api';
+import type { ApiResponse, RotateResponse } from '@/types/api';
 import { Upload, Download, RotateCw, FileText, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const PDFDocument = dynamic(() => import('react-pdf').then(m => m.Document), { ssr: false });
