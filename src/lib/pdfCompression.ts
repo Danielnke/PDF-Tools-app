@@ -147,11 +147,45 @@ export class PDFCompressionService {
       processingTime,
     };
 
-    // Progressive fallback to stronger compression if reduction is too small (except for low)
-    if (compressionRatio < 5) {
+    // Dynamic targets per level
+    const target = options.quality === 'low' ? 35 : options.quality === 'medium' ? 20 : 8;
+    if (compressionRatio < target) {
       const stronger = this.getStrongerSettings(options.quality);
       if (stronger) {
         return this.compressPDF(fileBytes, { ...options, quality: stronger });
+      } else {
+        // Already at 'low' – try an extra-aggressive pass (lower DPI and JPEG quality)
+        const extreme = { dpi: 60, jpegQuality: 30, grayscale: true, chromaSubsampling: '4:2:0' as const };
+        const outPdf2 = await PDFDocument.create();
+        for (let i = 0; i < pageCount; i++) {
+          const srcPage = srcPdf.getPages()[i];
+          const { width, height } = srcPage.getSize();
+          let pipeline = sharp(Buffer.from(fileBytes), { density: extreme.dpi }).extractPage(i).grayscale();
+          const jpegBuffer = await pipeline
+            .jpeg({ quality: extreme.jpegQuality, chromaSubsampling: extreme.chromaSubsampling, mozjpeg: true })
+            .toBuffer();
+          const pageImage = await outPdf2.embedJpg(jpegBuffer);
+          const page = outPdf2.addPage([width, height]);
+          const imgWidth = pageImage.width;
+          const imgHeight = pageImage.height;
+          const scale = Math.min(width / imgWidth, height / imgHeight);
+          const drawWidth = imgWidth * scale;
+          const drawHeight = imgHeight * scale;
+          const offsetX = (width - drawWidth) / 2;
+          const offsetY = (height - drawHeight) / 2;
+          page.drawImage(pageImage, { x: offsetX, y: offsetY, width: drawWidth, height: drawHeight });
+        }
+        const compressedBytes2 = await outPdf2.save({ useObjectStreams: true, addDefaultPage: false });
+        const processingTime2 = Date.now() - startTime;
+        const result2: CompressionResult = {
+          originalSize,
+          compressedSize: compressedBytes2.length,
+          compressionRatio: ((originalSize - compressedBytes2.length) / originalSize) * 100,
+          techniquesApplied: [...techniquesApplied, 'extra-aggressive'],
+          qualityLevel: options.quality,
+          processingTime: processingTime2,
+        };
+        return { compressedBytes: compressedBytes2, result: result2 };
       }
     }
 
