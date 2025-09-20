@@ -329,8 +329,8 @@ export default function RotatePdfPage() {
                             <Document
                               file={previewUrl}
                               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                              loading={<div className="text-sm text-muted">Loading preview...</div>}
-                              error={<div className="text-sm text-error">Failed to load preview</div>}
+                              loading={<div className="text-sm text-muted-foreground">Loading preview...</div>}
+                              error={<div className="text-sm text-destructive">Failed to load preview</div>}
                             >
                               <Page pageNumber={Math.min(previewPage, Math.max(numPages, 1))} width={480} rotate={((angle % 360) + 360) % 360} />
                             </Document>
