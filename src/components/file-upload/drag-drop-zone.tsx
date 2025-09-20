@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { useDropzone, FileRejection, DropEvent } from "react-dropzone";
+import { useDropzone, FileRejection } from "react-dropzone";
 import { Upload, FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateFiles, getAcceptedExtensions } from "@/lib/validation/file-validation";
@@ -25,7 +25,7 @@ export function DragDropZone({
 }: DragDropZoneProps) {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
+  const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
     setValidationErrors([]);
 
     // Validate files

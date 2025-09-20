@@ -1,5 +1,3 @@
-import { LucideIcon } from "lucide-react";
-
 export interface UploadedFile {
   id: string;
   name: string;

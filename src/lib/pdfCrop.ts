@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, degrees } from 'pdf-lib';
+import { PDFDocument, PDFPage } from 'pdf-lib';
 
 export interface CropOptions {
   pageNumber: number;

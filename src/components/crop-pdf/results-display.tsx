@@ -3,7 +3,6 @@
 import { Download, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
 
 interface CropResult {
   fileName: string;

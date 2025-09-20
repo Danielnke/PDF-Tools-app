@@ -82,7 +82,8 @@ export class PDFCompressionService {
         const { width, height } = srcPage.getSize(); // points (1/72")
 
         // Render the i-th page to a JPEG buffer
-        let pipeline = sharp(Buffer.from(fileBytes), { density: settings.dpi }).extractPage(i);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let pipeline = (sharp(Buffer.from(fileBytes), { density: settings.dpi }) as any).extractPage(i);
         if (settings.grayscale) pipeline = pipeline.grayscale();
 
         const jpegBuffer = await pipeline
@@ -115,7 +116,7 @@ export class PDFCompressionService {
       techniquesApplied.push('page-rasterization');
       techniquesApplied.push('jpeg-compression');
       if (settings.grayscale) techniquesApplied.push('grayscale');
-    } catch (e) {
+    } catch {
       // Rasterization failed (e.g., PDF rendering not supported). Fallback to lightweight compression.
       const fallback = await this.lightweightCompress(srcPdf, options);
       return fallback;
@@ -160,7 +161,8 @@ export class PDFCompressionService {
         for (let i = 0; i < pageCount; i++) {
           const srcPage = srcPdf.getPages()[i];
           const { width, height } = srcPage.getSize();
-          let pipeline = sharp(Buffer.from(fileBytes), { density: extreme.dpi }).extractPage(i).grayscale();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pipeline = (sharp(Buffer.from(fileBytes), { density: extreme.dpi }) as any).extractPage(i).grayscale();
           const jpegBuffer = await pipeline
             .jpeg({ quality: extreme.jpegQuality, chromaSubsampling: extreme.chromaSubsampling, mozjpeg: true })
             .toBuffer();

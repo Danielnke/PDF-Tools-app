@@ -138,7 +138,7 @@ export default function RotatePdfPage() {
       } else {
         throw new Error(uploadResult.message || 'Upload failed');
       }
-    } catch (e) {
+    } catch {
       setFile(prev => prev ? { ...prev, status: 'error' } : null);
       setError('Failed to upload file. Please try again.');
     }
@@ -189,7 +189,7 @@ export default function RotatePdfPage() {
       } else {
         setError(response.message || 'Failed to rotate PDF');
       }
-    } catch (e) {
+    } catch {
       clearInterval(interval);
       setError('Processing failed. Please try again.');
     } finally {
