@@ -182,9 +182,9 @@ export default function RotatePdfPage() {
 
       if (response.success && response.data) {
         setResult({
-          fileName: (response.data as any).fileName,
-          downloadUrl: (response.data as any).downloadUrl,
-          rotatedPages: (response.data as any).rotatedPages || [],
+          fileName: response.data.fileName,
+          downloadUrl: response.data.downloadUrl,
+          rotatedPages: response.data.rotatedPages || [],
         });
       } else {
         setError(response.message || 'Failed to rotate PDF');
