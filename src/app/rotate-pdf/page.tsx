@@ -275,35 +275,69 @@ export default function RotatePdfPage() {
 
                   {file.status === 'uploaded' && !result && (
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Rotation</label>
-                        <div className="grid grid-cols-4 gap-2">
-                          <Button variant={angle === 90 ? 'default' : 'outline'} onClick={() => setAngle(90)} disabled={isProcessing}>
-                            90° CW
-                          </Button>
-                          <Button variant={angle === -90 ? 'default' : 'outline'} onClick={() => setAngle(-90)} disabled={isProcessing}>
-                            90° CCW
-                          </Button>
-                          <Button variant={angle === 180 ? 'default' : 'outline'} onClick={() => setAngle(180)} disabled={isProcessing}>
-                            180°
-                          </Button>
-                          <Button variant={angle === 0 ? 'default' : 'outline'} onClick={() => setAngle(0)} disabled={isProcessing}>
-                            0°
-                          </Button>
-                        </div>
-                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Rotation</label>
+                            <div className="grid grid-cols-4 gap-2">
+                              <Button variant={angle === 90 ? 'default' : 'outline'} onClick={() => setAngle(90)} disabled={isProcessing}>
+                                90° CW
+                              </Button>
+                              <Button variant={angle === -90 ? 'default' : 'outline'} onClick={() => setAngle(-90)} disabled={isProcessing}>
+                                90° CCW
+                              </Button>
+                              <Button variant={angle === 180 ? 'default' : 'outline'} onClick={() => setAngle(180)} disabled={isProcessing}>
+                                180°
+                              </Button>
+                              <Button variant={angle === 0 ? 'default' : 'outline'} onClick={() => setAngle(0)} disabled={isProcessing}>
+                                0°
+                              </Button>
+                            </div>
+                          </div>
 
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Pages (optional)</label>
-                        <input
-                          type="text"
-                          value={pagesInput}
-                          onChange={(e) => setPagesInput(e.target.value)}
-                          placeholder="e.g., 1,3-5"
-                          className="w-full px-3 py-2 border rounded-md"
-                          disabled={isProcessing}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">Leave empty to rotate all pages</p>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Pages (optional)</label>
+                            <input
+                              type="text"
+                              value={pagesInput}
+                              onChange={(e) => setPagesInput(e.target.value)}
+                              placeholder="e.g., 1,3-5"
+                              className="w-full px-3 py-2 border rounded-md"
+                              disabled={isProcessing}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Leave empty to rotate all pages</p>
+                          </div>
+
+                          {numPages > 1 && previewUrl && (
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Preview Page</label>
+                              <input
+                                type="range"
+                                min={1}
+                                max={numPages}
+                                value={previewPage}
+                                onChange={(e) => setPreviewPage(parseInt(e.target.value, 10))}
+                                className="w-full"
+                              />
+                              <div className="text-xs text-muted-foreground mt-1">Page {previewPage} of {numPages}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-surface border border-border rounded-lg p-3 overflow-auto">
+                          {previewUrl ? (
+                            <Document
+                              file={previewUrl}
+                              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                              loading={<div className="text-sm text-muted">Loading preview...</div>}
+                              error={<div className="text-sm text-error">Failed to load preview</div>}
+                            >
+                              <Page pageNumber={Math.min(previewPage, Math.max(numPages, 1))} width={480} rotate={((angle % 360) + 360) % 360} />
+                            </Document>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">Preview will appear here after upload</div>
+                          )}
+                        </div>
                       </div>
 
                       <Button onClick={handleRotate} disabled={isProcessing} className="w-full">
