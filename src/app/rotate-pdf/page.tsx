@@ -9,7 +9,9 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pdfApi } from '@/lib/api-client/pdf-api';
 import { Upload, Download, RotateCw, FileText, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Document, Page } from 'react-pdf';
+import dynamic from 'next/dynamic';
+const PDFDocument = dynamic(() => import('react-pdf').then(m => m.Document), { ssr: false });
+const PDFPage = dynamic(() => import('react-pdf').then(m => m.Page), { ssr: false });
 
 interface UploadedFile {
   id: string;
@@ -348,14 +350,20 @@ export default function RotatePdfPage() {
                           }}
                         >
                           {previewUrl ? (
-                            <Document
+                            <PDFDocument
                               file={previewUrl}
                               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                               loading={<div className="text-sm text-muted-foreground">Loading preview...</div>}
                               error={<div className="text-sm text-destructive">Failed to load preview</div>}
                             >
-                              <Page pageNumber={Math.min(previewPage, Math.max(numPages, 1))} width={480} rotate={((angle % 360) + 360) % 360} />
-                            </Document>
+                              <PDFPage
+                                pageNumber={Math.min(previewPage, Math.max(numPages, 1))}
+                                width={480}
+                                rotate={((angle % 360) + 360) % 360}
+                                renderTextLayer={false}
+                                renderAnnotationLayer={false}
+                              />
+                            </PDFDocument>
                           ) : (
                             <div className="text-sm text-muted-foreground">Preview will appear here after upload</div>
                           )}
