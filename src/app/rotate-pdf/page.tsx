@@ -171,11 +171,11 @@ export default function RotatePdfPage() {
 
     try {
       const pages = parsePages(pagesInput);
-      const response = await pdfApi.rotatePdf({
+      const response = (await pdfApi.rotatePdf({
         filePath: file.filePath,
         angle,
         pages: pages.length > 0 ? pages : undefined,
-      });
+      })) as ApiResponse<RotateResponse>;
 
       clearInterval(interval);
       setProcessingProgress(100);
