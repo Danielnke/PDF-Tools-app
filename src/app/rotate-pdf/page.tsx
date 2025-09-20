@@ -56,6 +56,20 @@ export default function RotatePdfPage() {
   const [angle, setAngle] = useState<number>(90);
   const [pagesInput, setPagesInput] = useState<string>('');
 
+  // Preview state
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [previewPage, setPreviewPage] = useState<number>(1);
+
+  // Configure PDF.js worker
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('react-pdf').then(({ pdfjs }) => {
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+      }).catch(() => {});
+    }
+  }, []);
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setError(null);
     setResult(null);
@@ -327,7 +341,7 @@ export default function RotatePdfPage() {
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div>
               <h4 className="font-semibold mb-2">90° Increments</h4>
-              <p className="text-sm text-muted-foreground">Rotate clockwise, counter-clockwise, or 180��</p>
+              <p className="text-sm text-muted-foreground">Rotate clockwise, counter-clockwise, or 180°</p>
             </div>
             <div>
               <h4 className="font-semibold mb-2">Selected Pages</h4>
