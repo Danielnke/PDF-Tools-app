@@ -105,6 +105,13 @@ class PdfApiClient {
     return fetch(`${API_BASE_URL}/api/download/${filename}`);
   }
 
+  async rotatePdf(request: { filePath: string; angle: number; pages?: number[] }) {
+    return this.makeRequest('/api/pdf/rotate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   // Utility methods for file handling
   async validateFiles(files: File[], toolId: string): Promise<{
     valid: boolean;
@@ -117,7 +124,7 @@ class PdfApiClient {
 
     files.forEach((file) => {
       const extension = file.name.split('.').pop()?.toLowerCase();
-      
+
       if (!extension || !validExtensions.includes(extension)) {
         errors.push(`${file.name}: Invalid file type. Supported: ${validExtensions.join(', ')}`);
       }
