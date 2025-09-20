@@ -164,6 +164,42 @@ export class PDFCompressionService {
     return null; // already at strongest
   }
 
+  private async lightweightCompress(
+    srcPdf: PDFDocument,
+    options: CompressionOptions
+  ): Promise<{ compressedBytes: Uint8Array; result: CompressionResult }> {
+    const start = Date.now();
+    const originalBytes = await srcPdf.save();
+    const pdf = await PDFDocument.load(originalBytes, { ignoreEncryption: true, updateMetadata: false });
+
+    const techniques: string[] = [];
+
+    if (!options.preserveMetadata) {
+      pdf.setTitle('');
+      pdf.setAuthor('');
+      pdf.setSubject('');
+      pdf.setKeywords([]);
+      pdf.setProducer('');
+      pdf.setCreator('');
+      pdf.setCreationDate(new Date(0));
+      pdf.setModificationDate(new Date(0));
+      techniques.push('metadata-removal');
+    }
+
+    const compressed = await pdf.save({ useObjectStreams: true, addDefaultPage: false });
+
+    const result: CompressionResult = {
+      originalSize: originalBytes.length,
+      compressedSize: compressed.length,
+      compressionRatio: ((originalBytes.length - compressed.length) / originalBytes.length) * 100,
+      techniquesApplied: techniques.length ? techniques : ['lightweight-compression'],
+      qualityLevel: options.quality,
+      processingTime: Date.now() - start,
+    };
+
+    return { compressedBytes: compressed, result };
+  }
+
   async validatePDF(fileBytes: Uint8Array): Promise<boolean> {
     try {
       await PDFDocument.load(fileBytes, { ignoreEncryption: true });
