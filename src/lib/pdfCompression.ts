@@ -75,45 +75,51 @@ export class PDFCompressionService {
 
     const pageCount = srcPdf.getPageCount();
 
-    // For each page render to JPEG via sharp at configured DPI/quality
-    for (let i = 0; i < pageCount; i++) {
-      const srcPage = srcPdf.getPages()[i];
-      const { width, height } = srcPage.getSize(); // points (1/72")
+    try {
+      // For each page render to JPEG via sharp at configured DPI/quality
+      for (let i = 0; i < pageCount; i++) {
+        const srcPage = srcPdf.getPages()[i];
+        const { width, height } = srcPage.getSize(); // points (1/72")
 
-      // Render the i-th page to a JPEG buffer
-      let pipeline = sharp(Buffer.from(fileBytes), { density: settings.dpi }).extractPage(i);
-      if (settings.grayscale) pipeline = pipeline.grayscale();
+        // Render the i-th page to a JPEG buffer
+        let pipeline = sharp(Buffer.from(fileBytes), { density: settings.dpi }).extractPage(i);
+        if (settings.grayscale) pipeline = pipeline.grayscale();
 
-      const jpegBuffer = await pipeline
-        .jpeg({ quality: settings.jpegQuality, chromaSubsampling: settings.chromaSubsampling })
-        .toBuffer();
+        const jpegBuffer = await pipeline
+          .jpeg({ quality: settings.jpegQuality, chromaSubsampling: settings.chromaSubsampling })
+          .toBuffer();
 
-      // Embed image into new PDF page preserving original page size
-      const pageImage = await outPdf.embedJpg(jpegBuffer);
-      const page = outPdf.addPage([width, height]);
-      const imgWidth = pageImage.width;
-      const imgHeight = pageImage.height;
+        // Embed image into new PDF page preserving original page size
+        const pageImage = await outPdf.embedJpg(jpegBuffer);
+        const page = outPdf.addPage([width, height]);
+        const imgWidth = pageImage.width;
+        const imgHeight = pageImage.height;
 
-      // Fit image to page keeping aspect ratio
-      const scaleX = width / imgWidth;
-      const scaleY = height / imgHeight;
-      const scale = Math.min(scaleX, scaleY);
-      const drawWidth = imgWidth * scale;
-      const drawHeight = imgHeight * scale;
-      const offsetX = (width - drawWidth) / 2;
-      const offsetY = (height - drawHeight) / 2;
+        // Fit image to page keeping aspect ratio
+        const scaleX = width / imgWidth;
+        const scaleY = height / imgHeight;
+        const scale = Math.min(scaleX, scaleY);
+        const drawWidth = imgWidth * scale;
+        const drawHeight = imgHeight * scale;
+        const offsetX = (width - drawWidth) / 2;
+        const offsetY = (height - drawHeight) / 2;
 
-      page.drawImage(pageImage, {
-        x: offsetX,
-        y: offsetY,
-        width: drawWidth,
-        height: drawHeight,
-      });
+        page.drawImage(pageImage, {
+          x: offsetX,
+          y: offsetY,
+          width: drawWidth,
+          height: drawHeight,
+        });
+      }
+
+      techniquesApplied.push('page-rasterization');
+      techniquesApplied.push('jpeg-compression');
+      if (settings.grayscale) techniquesApplied.push('grayscale');
+    } catch (e) {
+      // Rasterization failed (e.g., PDF rendering not supported). Fallback to lightweight compression.
+      const fallback = await this.lightweightCompress(srcPdf, options);
+      return fallback;
     }
-
-    techniquesApplied.push('page-rasterization');
-    techniquesApplied.push('jpeg-compression');
-    if (settings.grayscale) techniquesApplied.push('grayscale');
 
     // Metadata handling
     if (!options.preserveMetadata) {
