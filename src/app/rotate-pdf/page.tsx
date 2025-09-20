@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pdfApi } from '@/lib/api-client/pdf-api';
-import { Upload, Download, RotateCw, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, Download, RotateCw, FileText, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Document, Page } from 'react-pdf';
 
 interface UploadedFile {
