@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
     
-    const outputPath = join(outputDir, `compressed-${uuidv4()}.pdf`);
+    const outputFileName = `compressed-${uuidv4()}.pdf`;
+    const outputPath = join(outputDir, outputFileName);
 
     try {
       // Use the new PDFCompressionService for pure pdf-lib compression
