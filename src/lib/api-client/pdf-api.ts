@@ -223,6 +223,7 @@ export const usePdfApi = () => {
     compressPdf: pdfApi.compressPdf.bind(pdfApi),
     cropPdf: pdfApi.cropPdf.bind(pdfApi),
     analyzePdf: pdfApi.analyzePdf.bind(pdfApi),
+    rotatePdf: pdfApi.rotatePdf.bind(pdfApi),
     downloadFile: pdfApi.downloadFile.bind(pdfApi),
     validateFiles: pdfApi.validateFiles.bind(pdfApi),
     trackProgress: pdfApi.trackProgress.bind(pdfApi),
