@@ -136,6 +136,18 @@ export const createApiResponse = <T>(
   error,
 });
 
+// File naming helpers
+export function sanitizeBaseName(name: string): string {
+  const trimmed = name.replace(/\.[^./\\]+$/i, '').trim();
+  // Remove illegal filename characters and collapse spaces
+  return trimmed.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').slice(0, 200);
+}
+
+export function buildOutputFileName(originalName: string | undefined | null, suffix: string, extension: string = 'pdf'): string {
+  const base = sanitizeBaseName(originalName || 'Document');
+  return `${base} (${suffix}).${extension}`;
+}
+
 // Rate limiting utility
 export class RateLimiter {
   private requests: Map<string, { count: number; resetTime: number }> = new Map();
