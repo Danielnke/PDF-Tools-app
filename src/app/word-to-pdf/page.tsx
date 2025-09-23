@@ -49,7 +49,8 @@ export default function WordToPdfPage() {
     const fileToUpload = acceptedFiles[0];
 
     if (fileToUpload.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !fileToUpload.name.toLowerCase().endsWith('.docx')) {
-      setError('Only .docx files are supported');
+      const isLegacyDoc = fileToUpload.name.toLowerCase().endsWith('.doc');
+      setError(isLegacyDoc ? 'Legacy .doc files are not supported. Please save your document as .docx and try again.' : 'Only .docx files are supported');
       return;
     }
 
