@@ -37,6 +37,7 @@ export interface SplitRequest {
   splitMode: 'ranges' | 'individual';
   ranges?: string[]; // e.g., ["1-3", "4-6"]
   pageNumbers?: number[]; // e.g., [1, 2, 3]
+  originalName?: string;
 }
 
 export interface SplitResponse {
@@ -56,6 +57,7 @@ export interface SplitResponse {
 export interface CompressRequest {
   filePath: string;
   quality: 'low' | 'medium' | 'high';
+  originalName?: string;
 }
 
 export interface CompressResponse {
@@ -72,6 +74,7 @@ export interface ConvertRequest {
   filePath: string;
   targetFormat: string;
   options?: Record<string, unknown>;
+  originalName?: string;
 }
 
 export interface ConvertResponse {
@@ -85,6 +88,7 @@ export interface RotateRequest {
   filePath: string;
   angle: number; // allowed: -270, -180, -90, 90, 180, 270
   pages?: number[]; // if omitted, rotate all pages
+  originalName?: string;
 }
 
 export interface RotateResponse {
