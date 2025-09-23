@@ -154,6 +154,7 @@ export default function CompressPdfPage() {
       const result = await pdfApi.compressPdf({
         filePath: `${uploadDir}/${file.fileName}`,
         quality: compressionLevel,
+        originalName: file.originalName,
       });
 
       clearInterval(progressInterval);
