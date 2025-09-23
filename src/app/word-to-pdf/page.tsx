@@ -212,6 +212,7 @@ export default function WordToPdfPage() {
                   <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium mb-2">{isDragActive ? 'Drop DOCX here' : 'Drag & drop DOCX here'}</p>
                   <p className="text-sm text-muted-foreground">or click to select file</p>
+                  <p className="text-xs text-muted-foreground mt-2">Max 100MB. Very large files may take longer to process.</p>
                 </div>
               )}
 
