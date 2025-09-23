@@ -112,6 +112,13 @@ class PdfApiClient {
     });
   }
 
+  async convertDocxToPdf(request: { filePath: string }) {
+    return this.makeRequest('/api/convert/word-to-pdf', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   // Utility methods for file handling
   async validateFiles(files: File[], toolId: string): Promise<{
     valid: boolean;
