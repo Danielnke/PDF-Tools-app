@@ -51,11 +51,11 @@ const pdfTools = [
     description: 'Crop PDF pages'
   },
   {
-    id: 'convert-pdf',
-    title: 'Convert PDF',
-    href: '/convert',
+    id: 'word-to-pdf',
+    title: 'Word to PDF',
+    href: '/word-to-pdf',
     icon: FileText,
-    description: 'PDF to Word, Excel, etc.'
+    description: 'Convert DOCX to PDF'
   },
   {
     id: 'convert-image',
