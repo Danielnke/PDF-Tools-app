@@ -5,6 +5,7 @@ import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import mammoth from 'mammoth';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 
 // Simple text wrapping utility
 function wrapText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
@@ -43,7 +44,7 @@ function wrapText(text: string, font: any, fontSize: number, maxWidth: number): 
 
 export async function POST(request: NextRequest) {
   try {
-    const { filePath } = await request.json();
+    const { filePath, originalName } = await request.json();
 
     if (!filePath || typeof filePath !== 'string' || filePath.trim() === '' || filePath.includes('undefined')) {
       return NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 });
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
     // Save to temp results dir
     const outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
-    const outputFileName = `word-to-pdf-${uuidv4()}.pdf`;
+    const outputFileName = buildOutputFileName(originalName, 'word-pdf');
     const outputPath = join(outputDir, outputFileName);
 
     await writeFile(outputPath, pdfBytes);
