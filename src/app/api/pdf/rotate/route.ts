@@ -4,10 +4,11 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { PDFDocument, degrees } from 'pdf-lib';
+import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 
 export async function POST(request: NextRequest) {
   try {
-    const { filePath, angle, pages } = await request.json();
+    const { filePath, angle, pages, originalName } = await request.json();
 
     if (!filePath || typeof filePath !== 'string' || filePath.trim() === '' || filePath.includes('undefined')) {
       return NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 });
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
-    const outputFileName = `rotated-${uuidv4()}.pdf`;
+    const outputFileName = buildOutputFileName(originalName, 'rotate');
     const outputPath = join(outputDir, outputFileName);
 
     const outBytes = await pdf.save({ useObjectStreams: true, addDefaultPage: false });
