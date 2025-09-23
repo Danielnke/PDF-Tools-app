@@ -151,6 +151,7 @@ export default function SplitPdfPage() {
         filePath: file.filePath,
         splitMode: splitMode === 'range' ? 'ranges' : 'individual',
         ranges: splitMode === 'range' ? pageRanges.split(',').map(range => range.trim()) : undefined,
+        originalName: file.originalName,
       });
 
       console.log('Split result:', result);
