@@ -4,12 +4,13 @@ import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 import { PDFCompressionService } from '@/lib/pdfCompression';
+import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 
 export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
   
   try {
-    const { filePath, quality } = await request.json();
+    const { filePath, quality, originalName } = await request.json();
 
     if (!filePath || filePath.trim() === '') {
       return NextResponse.json(
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
     
-    const outputFileName = `compressed-${uuidv4()}.pdf`;
+    const outputFileName = buildOutputFileName(originalName, 'compress');
     const outputPath = join(outputDir, outputFileName);
 
     try {
