@@ -105,7 +105,7 @@ class PdfApiClient {
     return fetch(`${API_BASE_URL}/api/download/${filename}`);
   }
 
-  async rotatePdf(request: { filePath: string; angle: number; pages?: number[] }) {
+  async rotatePdf(request: { filePath: string; angle: number; pages?: number[]; originalName?: string }) {
     return this.makeRequest('/api/pdf/rotate', {
       method: 'POST',
       body: JSON.stringify(request),
