@@ -50,8 +50,9 @@ export async function POST(request: NextRequest) {
 
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
-    
-    const outputPath = join(outputDir, `cropped-${uuidv4()}.pdf`);
+
+    const { buildOutputFileName } = await import('@/lib/api-utils/pdf-helpers');
+    const outputPath = join(outputDir, buildOutputFileName(originalName, 'crop'));
 
     try {
       const cropService = new PDFCropService();
