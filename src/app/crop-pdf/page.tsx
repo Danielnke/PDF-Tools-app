@@ -142,6 +142,7 @@ export default function CropPDFPage() {
         },
         body: JSON.stringify({
           filePath: uploadedFileData.filePath,
+          originalName: uploadedFileData.originalName,
           cropData,
           cropMode: cropMode === 'all' ? 'all' : 'single',
           selectedPages,
