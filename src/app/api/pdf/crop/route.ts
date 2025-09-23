@@ -102,7 +102,8 @@ export async function POST(request: NextRequest) {
       const totalProcessingTime = results.reduce((sum, result) => sum + result.processingTime, 0);
       const avgProcessingTime = results.length > 0 ? totalProcessingTime / results.length : 0;
 
-      const fileName = outputPath.split(/[\/\\]/).pop() || `cropped-${uuidv4()}.pdf`;
+      const { buildOutputFileName: __build } = await import('@/lib/api-utils/pdf-helpers');
+      const fileName = outputPath.split(/[\/\\]/).pop() || __build(originalName, 'crop');
       const dirName = outputDir.split(/[\/\\]/).pop() || '';
       
       console.log('Output path:', outputPath);
