@@ -89,7 +89,8 @@ export default function WordToPdfPage() {
         setError(uploadResult.error || 'Failed to upload file');
         setFile(prev => prev ? { ...prev, status: 'error' } : null);
       }
-    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_e) {
       setError('Failed to upload file. Please try again.');
       setFile(prev => prev ? { ...prev, status: 'error' } : null);
     }
@@ -137,11 +138,12 @@ export default function WordToPdfPage() {
       setProgressMessage('Conversion completed!');
 
       if (res.success && res.data) {
-        setResult({ fileName: (res.data as any).fileName, downloadUrl: (res.data as any).downloadUrl });
+        setResult(res.data as ConvertResult);
       } else {
         setError(res.error || 'Conversion failed');
       }
-    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_e) {
       clearInterval(progressInterval);
       setError('Conversion failed. Please try again.');
     } finally {

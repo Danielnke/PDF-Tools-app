@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 import { PDFCropService, MultiCropOptions } from '@/lib/pdfCrop';
 import { PDFCropValidator } from '@/lib/validation/pdfCrop.validate';
+import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 
 export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
@@ -51,8 +52,7 @@ export async function POST(request: NextRequest) {
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
 
-    const { buildOutputFileName } = await import('@/lib/api-utils/pdf-helpers');
-    const outputPath = join(outputDir, buildOutputFileName(originalName, 'crop'));
+    const outputPath = join(outputDir, buildOutputFileName(originalName, 'crop-pdf'));
 
     try {
       const cropService = new PDFCropService();
@@ -102,8 +102,7 @@ export async function POST(request: NextRequest) {
       const totalProcessingTime = results.reduce((sum, result) => sum + result.processingTime, 0);
       const avgProcessingTime = results.length > 0 ? totalProcessingTime / results.length : 0;
 
-      const { buildOutputFileName: __build } = await import('@/lib/api-utils/pdf-helpers');
-      const fileName = outputPath.split(/[\/\\]/).pop() || __build(originalName, 'crop');
+      const fileName = outputPath.split(/[\/\\]/).pop() || buildOutputFileName(originalName, 'crop-pdf');
       const dirName = outputDir.split(/[\/\\]/).pop() || '';
       
       console.log('Output path:', outputPath);

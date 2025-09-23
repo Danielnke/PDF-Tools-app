@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
-    const outputFileName = buildOutputFileName(originalName, 'rotate');
+    const outputFileName = buildOutputFileName(originalName, 'rotate-pdf');
     const outputPath = join(outputDir, outputFileName);
 
     const outBytes = await pdf.save({ useObjectStreams: true, addDefaultPage: false });

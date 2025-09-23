@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
     
-    const outputFileName = buildOutputFileName(originalName, 'compress');
+    const outputFileName = buildOutputFileName(originalName, 'compress-pdf');
     const outputPath = join(outputDir, outputFileName);
 
     try {
