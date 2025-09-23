@@ -105,14 +105,14 @@ class PdfApiClient {
     return fetch(`${API_BASE_URL}/api/download/${filename}`);
   }
 
-  async rotatePdf(request: { filePath: string; angle: number; pages?: number[]; originalName?: string }) {
+  async rotatePdf(request: { filePath: string; angle: number; pages?: number[]; originalName: string }) {
     return this.makeRequest('/api/pdf/rotate', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
-  async convertDocxToPdf(request: { filePath: string }) {
+  async convertDocxToPdf(request: { filePath: string; originalName: string }) {
     return this.makeRequest('/api/convert/word-to-pdf', {
       method: 'POST',
       body: JSON.stringify(request),

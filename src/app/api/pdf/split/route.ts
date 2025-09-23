@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join, basename } from 'path';
-import { buildOutputFileName, sanitizeBaseName } from '@/lib/api-utils/pdf-helpers';
+import { sanitizeBaseName } from '@/lib/api-utils/pdf-helpers';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     const splitFiles = [];
 
     const base = sanitizeBaseName(originalName || 'Document');
+    let fileCounter = 1;
 
     if (splitMode === 'ranges' && ranges) {
       // Split by page ranges
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
         const copiedPages = await newPdf.copyPages(pdf, pagesToCopy);
         copiedPages.forEach((page) => newPdf.addPage(page));
 
-        const fileName = `${base} (split ${start}-${end}).pdf`;
+        const fileName = `${base} (split-pdf)-${fileCounter++}.pdf`;
         const filePath = join(outputDir, fileName);
         await writeFile(filePath, await newPdf.save());
 
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
         const [copiedPage] = await newPdf.copyPages(pdf, [pageNum - 1]);
         newPdf.addPage(copiedPage);
 
-        const fileName = `${base} (page ${pageNum}).pdf`;
+        const fileName = `${base} (split-pdf)-${fileCounter++}.pdf`;
         const filePath = join(outputDir, fileName);
         await writeFile(filePath, await newPdf.save());
 

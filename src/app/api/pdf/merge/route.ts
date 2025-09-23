@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
 import { join } from 'path';
-import { buildOutputFileName, sanitizeBaseName } from '@/lib/api-utils/pdf-helpers';
+import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 
@@ -47,9 +47,7 @@ export async function POST(request: NextRequest) {
     const mergedPdfBytes = await mergedPdf.save();
 
     // Create output file
-    const firstOriginal = files[0]?.originalName || 'Document.pdf';
-    const base = sanitizeBaseName(firstOriginal);
-    const outputFileName = `${base} (merge).pdf`;
+    const outputFileName = buildOutputFileName(files[0]?.originalName, 'merge-pdf');
     const outputPath = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputPath, { recursive: true });
     await writeFile(join(outputPath, outputFileName), mergedPdfBytes);
