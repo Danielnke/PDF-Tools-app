@@ -131,7 +131,7 @@ export default function WordToPdfPage() {
     }, 800);
 
     try {
-      const res = await pdfApi.convertDocxToPdf({ filePath: `${uploadDir}/${file.fileName}` });
+      const res = await pdfApi.convertDocxToPdf({ filePath: `${uploadDir}/${file.fileName}`, originalName: file.originalName });
       clearInterval(progressInterval);
       setProcessingProgress(100);
       setProgressMessage('Conversion completed!');
