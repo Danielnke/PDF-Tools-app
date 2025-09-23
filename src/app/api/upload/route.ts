@@ -23,8 +23,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (validFiles.length === 0) {
+      const hadLegacyDoc = files.some(f => f.name.toLowerCase().endsWith('.doc'));
       return NextResponse.json(
-        { error: 'No valid files provided' },
+        { error: hadLegacyDoc ? 'Legacy .doc files are not supported. Please convert to .docx and try again.' : 'No valid files provided' },
         { status: 400 }
       );
     }
