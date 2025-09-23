@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { buildOutputFileName, sanitizeBaseName } from '@/lib/api-utils/pdf-helpers';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 
@@ -44,9 +45,11 @@ export async function POST(request: NextRequest) {
     }
 
     const mergedPdfBytes = await mergedPdf.save();
-    
+
     // Create output file
-    const outputFileName = `merged-${uuidv4()}.pdf`;
+    const firstOriginal = files[0]?.originalName || 'Document.pdf';
+    const base = sanitizeBaseName(firstOriginal);
+    const outputFileName = `${base} (merge).pdf`;
     const outputPath = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputPath, { recursive: true });
     await writeFile(join(outputPath, outputFileName), mergedPdfBytes);
@@ -60,11 +63,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const dirName = outputPath.split(/[\\/]/).pop() || '';
+
     return NextResponse.json({
       message: 'PDFs merged successfully',
       fileName: outputFileName,
       filePath: join(outputPath, outputFileName),
-      downloadUrl: `/api/download/${outputFileName}`,
+      downloadUrl: `/api/download/${outputFileName}?dir=${dirName}`,
     });
 
   } catch (error) {

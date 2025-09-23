@@ -175,6 +175,7 @@ export default function RotatePdfPage() {
         filePath: file.filePath,
         angle,
         pages: pages.length > 0 ? pages : undefined,
+        originalName: file.originalName,
       })) as ApiResponse<RotateResponse>;
 
       clearInterval(interval);

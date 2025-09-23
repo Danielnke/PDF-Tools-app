@@ -47,15 +47,15 @@ export const PDF_TOOLS: PDFTool[] = [
     acceptedTypes: [FILE_TYPES.PDF]
   },
   {
-    id: 'convert-office',
-    title: 'Convert PDF',
-    description: 'Convert PDF to Word, Excel, PowerPoint, and images',
+    id: 'word-to-pdf',
+    title: 'Word to PDF',
+    description: 'Convert DOCX documents to PDF quickly and securely',
     icon: 'file-text',
-    href: '/convert',
-    features: ['Multiple formats', 'Layout preserved', 'High accuracy'],
-    maxFiles: 5,
-    maxFileSize: MAX_FILE_SIZES.PDF,
-    acceptedTypes: [FILE_TYPES.PDF]
+    href: '/word-to-pdf',
+    features: ['Accurate text', 'A4 pagination', 'Fast processing'],
+    maxFiles: 1,
+    maxFileSize: MAX_FILE_SIZES.OFFICE,
+    acceptedTypes: [FILE_TYPES.DOCX]
   },
   {
     id: 'rotate',

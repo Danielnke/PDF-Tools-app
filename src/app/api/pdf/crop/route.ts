@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
   
   try {
-    const { filePath, cropData, cropMode } = await request.json();
+    const { filePath, cropData, cropMode, originalName } = await request.json();
 
     // Convert to legacy format for compatibility
     const crops = cropData?.map((item: { pageNumber: number; cropArea: { x: number; y: number; width: number; height: number; unit?: string } }) => ({
@@ -50,8 +50,9 @@ export async function POST(request: NextRequest) {
 
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
-    
-    const outputPath = join(outputDir, `cropped-${uuidv4()}.pdf`);
+
+    const { buildOutputFileName } = await import('@/lib/api-utils/pdf-helpers');
+    const outputPath = join(outputDir, buildOutputFileName(originalName, 'crop'));
 
     try {
       const cropService = new PDFCropService();
@@ -101,7 +102,8 @@ export async function POST(request: NextRequest) {
       const totalProcessingTime = results.reduce((sum, result) => sum + result.processingTime, 0);
       const avgProcessingTime = results.length > 0 ? totalProcessingTime / results.length : 0;
 
-      const fileName = outputPath.split(/[\/\\]/).pop() || `cropped-${uuidv4()}.pdf`;
+      const { buildOutputFileName: __build } = await import('@/lib/api-utils/pdf-helpers');
+      const fileName = outputPath.split(/[\/\\]/).pop() || __build(originalName, 'crop');
       const dirName = outputDir.split(/[\/\\]/).pop() || '';
       
       console.log('Output path:', outputPath);

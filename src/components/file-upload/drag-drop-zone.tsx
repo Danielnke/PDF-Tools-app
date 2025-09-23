@@ -42,9 +42,13 @@ export function DragDropZone({
 
     // Handle rejected files
     if (fileRejections.length > 0) {
-      const rejectionErrors = fileRejections.map(({ file, errors }) => 
-        `${file.name}: ${errors.map((e) => e.message).join(', ')}`
-      );
+      const rejectionErrors = fileRejections.map(({ file, errors }) => {
+        const name = file.name.toLowerCase();
+        if (name.endsWith('.doc')) {
+          return `${file.name}: Legacy .doc files are not supported. Please save as .docx and try again.`;
+        }
+        return `${file.name}: ${errors.map((e) => e.message).join(', ')}`;
+      });
       setValidationErrors(rejectionErrors);
       return;
     }
