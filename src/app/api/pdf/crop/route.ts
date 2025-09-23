@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
   
   try {
-    const { filePath, cropData, cropMode } = await request.json();
+    const { filePath, cropData, cropMode, originalName } = await request.json();
 
     // Convert to legacy format for compatibility
     const crops = cropData?.map((item: { pageNumber: number; cropArea: { x: number; y: number; width: number; height: number; unit?: string } }) => ({
