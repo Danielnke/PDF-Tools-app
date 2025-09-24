@@ -48,18 +48,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert to legacy format for compatibility
+    type ValidUnit = 'px' | 'pt' | 'mm' | 'in';
+    const supportedUnits: ValidUnit[] = ['px', 'pt', 'mm', 'in'];
+
+    const isSupportedUnit = (unit: unknown): unit is ValidUnit => supportedUnits.includes(unit as ValidUnit);
+
     const crops = cropData?.map((item: IncomingCropItem) => ({
       pageNumber: item.pageNumber,
       x: item.cropArea.x,
       y: item.cropArea.y,
       width: item.cropArea.width,
       height: item.cropArea.height,
-      unit: item.cropArea.unit || 'pt'
+      unit: isSupportedUnit(item.cropArea.unit) ? item.cropArea.unit : 'pt'
     })) || [];
 
     const applyToAllPages = cropMode === 'all';
 
     // Validate file path
+    if (!filePath) {
+      return withCors(NextResponse.json({ error: 'File not provided or failed to upload.' }, { status: 400 }));
+    }
+
     const filePathValidation = PDFCropValidator.validateFilePath(filePath);
     if (!filePathValidation.isValid) {
       return withCors(NextResponse.json(

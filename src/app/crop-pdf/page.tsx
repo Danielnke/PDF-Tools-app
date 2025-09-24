@@ -28,6 +28,7 @@ export default function CropPDFPage() {
   const [result, setResult] = useState<CropResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [scope, setScope] = useState<'all' | 'current'>('current');
 
   // Configure PDF.js worker on client side only
   useEffect(() => {
