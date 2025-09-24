@@ -29,6 +29,8 @@ export interface PageInfo {
   height: number;
 }
 
+type ResizeHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
 interface PdfViewerContinuousProps {
   file: File;
   pageInfo: PageInfo[];
@@ -37,11 +39,33 @@ interface PdfViewerContinuousProps {
 }
 
 export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChange }: PdfViewerContinuousProps) {
+  // Drawing state for initial selection
   const [dragging, setDragging] = useState<{ page: number; startX: number; startY: number; target: HTMLDivElement | null } | null>(null);
   const [tempArea, setTempArea] = useState<{ [page: number]: CropArea }>({});
+
+  // Editing state (move/resize) for persistent crop
+  const [moving, setMoving] = useState<{ page: number; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+  const [resizing, setResizing] = useState<{ page: number; handle: ResizeHandle; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+
   const scaleMapRef = useRef<Record<number, number>>({});
 
+  const getScale = useCallback((pageNumber: number) => scaleMapRef.current[pageNumber] || 1, []);
+
+  const clampArea = useCallback((area: CropArea, page: PageInfo) => {
+    const x = Math.max(0, Math.min(area.x, page.width));
+    const y = Math.max(0, Math.min(area.y, page.height));
+    const w = Math.max(1, Math.min(area.width, page.width - x));
+    const h = Math.max(1, Math.min(area.height, page.height - y));
+    return { x, y, width: w, height: h } as CropArea;
+  }, []);
+
+  // Start drawing only if no crop exists for this page
   const handleMouseDown = useCallback((pageNumber: number, e: React.MouseEvent<HTMLDivElement>) => {
+    const existing = cropAreas[pageNumber];
+    if (existing && existing.width > 0 && existing.height > 0) {
+      return; // Prevent creating a new box when one already exists
+    }
+
     const target = e.currentTarget as HTMLDivElement;
     const rect = target.getBoundingClientRect();
     const startX = e.clientX - rect.left;
@@ -63,7 +87,7 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
-      const scale = scaleMapRef.current[pageNumber] || 1;
+      const scale = getScale(pageNumber);
       const area = tempArea[pageNumber];
       if (area && area.width > 10 && area.height > 10) {
         onCropAreaChange(pageNumber, { x: area.x / scale, y: area.y / scale, width: area.width / scale, height: area.height / scale });
@@ -78,7 +102,7 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
 
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, [onCropAreaChange, scaleMapRef, tempArea]);
+  }, [cropAreas, getScale, onCropAreaChange, tempArea]);
 
   const handleMouseMove = useCallback((pageNumber: number, e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragging || dragging.page !== pageNumber) return;
@@ -96,7 +120,7 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
   const handleMouseUp = useCallback((pageNumber: number) => {
     if (!dragging || !tempArea[pageNumber]) return;
     setDragging(null);
-    const scale = scaleMapRef.current[pageNumber] || 1;
+    const scale = getScale(pageNumber);
     const a = tempArea[pageNumber];
     if (a.width > 10 && a.height > 10) {
       onCropAreaChange(pageNumber, {
@@ -111,9 +135,86 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
       delete newTempArea[pageNumber];
       return newTempArea;
     });
-  }, [dragging, tempArea, onCropAreaChange]);
+  }, [dragging, tempArea, onCropAreaChange, getScale]);
 
-  const targetPageWidth = 520; // smaller vertical preview
+  // Start moving existing crop
+  const startMove = useCallback((page: number, e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const area = cropAreas[page];
+    if (!area) return;
+    setMoving({ page, startClientX: e.clientX, startClientY: e.clientY, startArea: area });
+
+    const onMove = (ev: MouseEvent) => {
+      setMoving(prev => {
+        if (!prev) return null;
+        const s = getScale(page);
+        const dxPx = ev.clientX - prev.startClientX;
+        const dyPx = ev.clientY - prev.startClientY;
+        const dx = dxPx / s;
+        const dy = dyPx / s;
+        const pageMeta = pageInfo.find(p => p.pageNumber === page)!;
+        const next = clampArea({ ...prev.startArea, x: prev.startArea.x + dx, y: prev.startArea.y + dy }, pageMeta);
+        onCropAreaChange(page, next);
+        return { ...prev };
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setMoving(null);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [cropAreas, getScale, onCropAreaChange, pageInfo, clampArea]);
+
+  // Start resizing existing crop
+  const startResize = useCallback((page: number, handle: ResizeHandle, e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const area = cropAreas[page];
+    if (!area) return;
+    setResizing({ page, handle, startClientX: e.clientX, startClientY: e.clientY, startArea: area });
+
+    const onMove = (ev: MouseEvent) => {
+      setResizing(prev => {
+        if (!prev) return null;
+        const s = getScale(page);
+        const dxPx = ev.clientX - prev.startClientX;
+        const dyPx = ev.clientY - prev.startClientY;
+        const dx = dxPx / s;
+        const dy = dyPx / s;
+        const start = prev.startArea;
+        let next: CropArea = { ...start };
+        // Adjust based on handle
+        if (prev.handle.includes("e")) {
+          next.width = Math.max(1, start.width + dx);
+        }
+        if (prev.handle.includes("s")) {
+          next.height = Math.max(1, start.height + dy);
+        }
+        if (prev.handle.includes("w")) {
+          next.x = start.x + dx;
+          next.width = Math.max(1, start.width - dx);
+        }
+        if (prev.handle.includes("n")) {
+          next.y = start.y + dy;
+          next.height = Math.max(1, start.height - dy);
+        }
+        const pageMeta = pageInfo.find(p => p.pageNumber === page)!;
+        next = clampArea(next, pageMeta);
+        onCropAreaChange(page, next);
+        return { ...prev };
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setResizing(null);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [cropAreas, getScale, onCropAreaChange, pageInfo, clampArea]);
+
+  const targetPageWidth = 520;
 
   return (
     <div className="relative w-full bg-background">
@@ -142,24 +243,64 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
                   }}
                 />
 
-                {/* Existing crop */}
+                {/* Persistent crop area with handles */}
                 {cropAreas[info.pageNumber] && cropAreas[info.pageNumber].width > 0 && (
                   <div
-                    className="absolute border-2 border-green-500 bg-green-500/10 shadow-lg"
+                    className="absolute border-2 border-green-500 bg-green-500/10 shadow-lg cursor-move"
                     style={{
-                      left: (cropAreas[info.pageNumber].x) * (scaleMapRef.current[info.pageNumber] || 1),
-                      top: (cropAreas[info.pageNumber].y) * (scaleMapRef.current[info.pageNumber] || 1),
-                      width: (cropAreas[info.pageNumber].width) * (scaleMapRef.current[info.pageNumber] || 1),
-                      height: (cropAreas[info.pageNumber].height) * (scaleMapRef.current[info.pageNumber] || 1),
+                      left: (cropAreas[info.pageNumber].x) * getScale(info.pageNumber),
+                      top: (cropAreas[info.pageNumber].y) * getScale(info.pageNumber),
+                      width: (cropAreas[info.pageNumber].width) * getScale(info.pageNumber),
+                      height: (cropAreas[info.pageNumber].height) * getScale(info.pageNumber),
+                      pointerEvents: 'auto'
                     }}
+                    onMouseDown={(e) => startMove(info.pageNumber, e)}
                   >
                     <div className="absolute -top-7 left-0 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded shadow">
                       Cropped Area
                     </div>
+                    {/* Clear button */}
+                    <button
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCropAreaChange(info.pageNumber, { x: 0, y: 0, width: 0, height: 0 });
+                      }}
+                      aria-label="Clear selection"
+                    >
+                      ×
+                    </button>
+                    {/* Resize handles */}
+                    {(["nw","n","ne","e","se","s","sw","w"] as ResizeHandle[]).map(h => (
+                      <div
+                        key={h}
+                        onMouseDown={(e) => startResize(info.pageNumber, h, e)}
+                        className="absolute bg-white border border-green-600"
+                        style={{
+                          width: 10,
+                          height: 10,
+                          cursor:
+                            h === 'n' ? 'ns-resize' :
+                            h === 's' ? 'ns-resize' :
+                            h === 'e' ? 'ew-resize' :
+                            h === 'w' ? 'ew-resize' :
+                            h === 'ne' ? 'nesw-resize' :
+                            h === 'nw' ? 'nwse-resize' :
+                            h === 'se' ? 'nwse-resize' :
+                            'nesw-resize',
+                          left:
+                            h.includes('w') ? -5 : h.includes('e') ? 'calc(100% - 5px)' : 'calc(50% - 5px)',
+                          top:
+                            h.includes('n') ? -5 : h.includes('s') ? 'calc(100% - 5px)' : 'calc(50% - 5px)',
+                        }}
+                        aria-label={`Resize ${h}`}
+                      />
+                    ))}
                   </div>
                 )}
 
-                {/* Temp selection */}
+                {/* Temp selection (first draw) */}
                 {tempArea[info.pageNumber] && (
                   <div
                     className="absolute border-2 border-blue-500 bg-blue-500/20 shadow-lg"
@@ -176,6 +317,7 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
                   </div>
                 )}
 
+                {/* Hint */}
                 {!cropAreas[info.pageNumber] && !tempArea[info.pageNumber] && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded text-xs font-medium shadow-lg">
