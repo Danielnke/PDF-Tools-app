@@ -54,9 +54,15 @@ export default function HtmlToPdfPage() {
       }
       const res = await fetch('/api/convert/html-to-pdf', { method: 'POST', body: form });
       setProgress(80);
-      const raw = await res.text();
-      const data = raw ? (() => { try { return JSON.parse(raw); } catch { return { error: raw }; } })() : {};
-      if (!res.ok) throw new Error(data.error || 'Conversion failed');
+      let data: any = {};
+      try {
+        const clone = res.clone();
+        const raw = await clone.text();
+        data = raw ? (() => { try { return JSON.parse(raw); } catch { return { error: raw }; } })() : {};
+      } catch {
+        data = {};
+      }
+      if (!res.ok) throw new Error((data && data.error) || `Conversion failed (status ${res.status})`);
       setResult({ fileName: data.fileName, downloadUrl: data.downloadUrl });
       setProgress(100);
     } catch (e: unknown) {
