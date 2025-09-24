@@ -262,18 +262,6 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
                     <div className="absolute -top-7 left-0 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded shadow">
                       Cropped Area
                     </div>
-                    {/* Clear button */}
-                    <button
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCropAreaChange(info.pageNumber, { x: 0, y: 0, width: 0, height: 0 });
-                      }}
-                      aria-label="Clear selection"
-                    >
-                      ×
-                    </button>
                     {/* Resize handles */}
                     {(["nw","n","ne","e","se","s","sw","w"] as ResizeHandle[]).map(h => (
                       <div
