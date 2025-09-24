@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { MainLayout } from '@/components/layout/main-layout';
@@ -52,12 +54,20 @@ export default function HtmlToPdfPage() {
       }
       const res = await fetch('/api/convert/html-to-pdf', { method: 'POST', body: form });
       setProgress(80);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Conversion failed');
+      let data: any = {};
+      try {
+        const clone = res.clone();
+        const raw = await clone.text();
+        data = raw ? (() => { try { return JSON.parse(raw); } catch { return { error: raw }; } })() : {};
+      } catch {
+        data = {};
+      }
+      if (!res.ok) throw new Error((data && data.error) || `Conversion failed (status ${res.status})`);
       setResult({ fileName: data.fileName, downloadUrl: data.downloadUrl });
       setProgress(100);
-    } catch (e: any) {
-      setError(e?.message || 'Conversion failed');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Conversion failed';
+      setError(message);
     } finally {
       setIsProcessing(false);
     }
@@ -98,7 +108,7 @@ export default function HtmlToPdfPage() {
                   <input
                     type="url"
                     placeholder="https://example.com"
-                    value={url}
+                    value={url ?? ''}
                     onChange={(e) => setUrl(e.target.value)}
                     className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
                   />

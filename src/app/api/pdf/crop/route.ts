@@ -16,13 +16,16 @@ export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get('content-type') || '';
     let filePath: string | null = null;
-    let cropData: any = null;
+    type IncomingCropItem = { pageNumber: number; cropArea: { x: number; y: number; width: number; height: number; unit?: string } };
+    let cropData: IncomingCropItem[] | null = null;
     let cropMode: string | null = null;
     let originalName: string | undefined = undefined;
 
     if (contentType.includes('multipart/form-data')) {
       const form = await request.formData();
-      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      const primary = form.get('file');
+      const fallback = form.getAll('files').find((v) => v instanceof File) ?? null;
+      const file = (primary instanceof File ? primary : (fallback instanceof File ? fallback : null));
       const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
       await mkdir(uploadDir, { recursive: true });
       if (file) {
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
       cropMode = (form.get('cropMode') as string) || null;
       const cropField = form.get('cropData') as string | null;
       if (cropField) {
-        try { cropData = JSON.parse(cropField); } catch { cropData = null; }
+        try { cropData = JSON.parse(cropField) as IncomingCropItem[]; } catch { cropData = null; }
       }
     } else {
       const body = await request.json();
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert to legacy format for compatibility
-    const crops = cropData?.map((item: { pageNumber: number; cropArea: { x: number; y: number; width: number; height: number; unit?: string } }) => ({
+    const crops = cropData?.map((item: IncomingCropItem) => ({
       pageNumber: item.pageNumber,
       x: item.cropArea.x,
       y: item.cropArea.y,

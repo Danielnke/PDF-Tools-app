@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
 
     if (contentType.includes('multipart/form-data')) {
       const form = await request.formData();
-      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      const primary = form.get('file');
+      const fallback = form.getAll('files').find((v) => v instanceof File) ?? null;
+      const file = (primary instanceof File ? primary : (fallback instanceof File ? fallback : null));
       if (file) {
         const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
         await mkdir(uploadDir, { recursive: true });

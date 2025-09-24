@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "predev": "node -e \"require('fs').mkdirSync('.next/static/development', { recursive: true })\"",
+    "dev": "next dev --turbopack --port 3000 --hostname 0.0.0.0",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -31,7 +32,9 @@
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",
     "xlsx": "^0.18.5",
-    "puppeteer": "^22.13.1"
+    "puppeteer": "^22.13.1",
+    "puppeteer-core": "^22.13.1",
+    "@sparticuz/chromium": "^131.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

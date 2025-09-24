@@ -3,7 +3,8 @@ import { mkdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer-core';
+import { createBrowser } from '@/lib/browser';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 import { withCors, preflight } from '@/lib/api-utils/cors';
 
@@ -20,7 +21,7 @@ function isHttpUrl(value: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  let browser: puppeteer.Browser | null = null;
+  let browser: Browser | null = null;
   try {
     const contentType = request.headers.get('content-type') || '';
 
@@ -33,7 +34,9 @@ export async function POST(request: NextRequest) {
       const form = await request.formData();
       const urlField = form.get('url');
       const htmlField = form.get('html');
-      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      const primary = form.get('file');
+      const fallback = form.getAll('files').find((v) => v instanceof File) ?? null;
+      const file = (primary instanceof File ? primary : (fallback instanceof File ? fallback : null));
 
       if (typeof urlField === 'string' && urlField.trim()) {
         url = urlField.trim();
@@ -67,12 +70,16 @@ export async function POST(request: NextRequest) {
       return withCors(NextResponse.json({ error: 'Invalid URL. Only http/https supported.' }, { status: 400 }));
     }
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    try {
+      browser = await createBrowser();
+    } catch (launchErr) {
+      console.error('Browser launch failed:', launchErr);
+      return withCors(NextResponse.json({ error: 'Browser unavailable. Provide BROWSER_WS_ENDPOINT env or deploy with serverless Chromium.' }, { status: 500 }));
+    }
 
     const page = await browser.newPage();
+    try { await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari'); } catch {}
+    try { await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' }); } catch {}
 
     // Reasonable PDF defaults
     const pdfOptions = {
@@ -83,7 +90,12 @@ export async function POST(request: NextRequest) {
     };
 
     if (mode === 'url' && url) {
-      await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
+      try {
+        await page.goto(url, { waitUntil: ['networkidle0','domcontentloaded'] as any, timeout: 60000 });
+      } catch (navErr) {
+        console.error('Navigation error:', navErr);
+        return withCors(NextResponse.json({ error: 'Failed to load the URL. It may block bots or took too long to respond.' }, { status: 400 }));
+      }
     } else if (htmlString) {
       // Inject <base> if a baseUrl was given for resolving relative paths
       let content = htmlString;
@@ -98,10 +110,21 @@ export async function POST(request: NextRequest) {
         content = content.replace(/<head(\s[^>]*)?>/i, (m) => `${m}\n<base href="${baseUrl}">`);
       }
 
-      await page.setContent(content, { waitUntil: 'networkidle0' });
+      try {
+        await page.setContent(content, { waitUntil: 'networkidle0' });
+      } catch (setErr) {
+        console.error('setContent error:', setErr);
+        return withCors(NextResponse.json({ error: 'Failed to render the provided HTML' }, { status: 400 }));
+      }
     }
 
-    const pdfBuffer = await page.pdf(pdfOptions);
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await page.pdf(pdfOptions) as unknown as Buffer;
+    } catch (pdfErr) {
+      console.error('PDF generation error:', pdfErr);
+      return withCors(NextResponse.json({ error: 'Failed to generate PDF from the page' }, { status: 500 }));
+    }
 
     const outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
@@ -122,7 +145,8 @@ export async function POST(request: NextRequest) {
     }));
   } catch (error) {
     console.error('HTML to PDF error:', error);
-    return withCors(NextResponse.json({ error: 'Failed to convert HTML/URL to PDF' }, { status: 500 }));
+    const msg = error instanceof Error ? error.message : 'Failed to convert HTML/URL to PDF';
+    return withCors(NextResponse.json({ error: msg }, { status: 500 }));
   } finally {
     try { await browser?.close(); } catch {}
   }
