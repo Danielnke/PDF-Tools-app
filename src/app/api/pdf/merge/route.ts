@@ -5,16 +5,19 @@ import { join } from 'path';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
     const { files } = await request.json();
 
     if (!files || files.length < 2) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'At least 2 files are required for merging' },
         { status: 400 }
-      );
+      ));
     }
 
     const mergedPdf = await PDFDocument.create();
@@ -23,10 +26,10 @@ export async function POST(request: NextRequest) {
       const filePath = fileInfo.filePath;
       
       if (!filePath || filePath.trim() === '' || filePath.includes('undefined')) {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: 'Invalid file path provided' },
           { status: 400 }
-        );
+        ));
       }
       
       const fileBytes = await readFile(filePath);
@@ -37,10 +40,10 @@ export async function POST(request: NextRequest) {
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       } catch (error) {
         console.error(`Error processing file ${fileInfo.originalName}:`, error);
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: `Invalid PDF file: ${fileInfo.originalName}` },
           { status: 400 }
-        );
+        ));
       }
     }
 
@@ -63,18 +66,18 @@ export async function POST(request: NextRequest) {
 
     const dirName = outputPath.split(/[\\/]/).pop() || '';
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       message: 'PDFs merged successfully',
       fileName: outputFileName,
       filePath: join(outputPath, outputFileName),
       downloadUrl: `/api/download/${outputFileName}?dir=${dirName}`,
-    });
+    }));
 
   } catch (error) {
     console.error('Merge error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to merge PDFs' },
       { status: 500 }
-    );
+    ));
   }
 }
