@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
       const form = await request.formData();
       const urlField = form.get('url');
       const htmlField = form.get('html');
-      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      const primary = form.get('file');
+      const fallback = form.getAll('files').find((v) => v instanceof File) ?? null;
+      const file = (primary instanceof File ? primary : (fallback instanceof File ? fallback : null));
 
       if (typeof urlField === 'string' && urlField.trim()) {
         url = urlField.trim();

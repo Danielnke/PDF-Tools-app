@@ -56,8 +56,9 @@ export default function HtmlToPdfPage() {
       if (!res.ok) throw new Error(data.error || 'Conversion failed');
       setResult({ fileName: data.fileName, downloadUrl: data.downloadUrl });
       setProgress(100);
-    } catch (e: any) {
-      setError(e?.message || 'Conversion failed');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Conversion failed';
+      setError(message);
     } finally {
       setIsProcessing(false);
     }
