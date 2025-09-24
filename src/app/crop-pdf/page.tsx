@@ -272,10 +272,10 @@ export default function CropPDFPage() {
                   <div className="text-xs text-muted-foreground">Pages</div>
                   <div className="flex items-center gap-3">
                     <label className="inline-flex items-center gap-2 text-sm">
-                      <input type="radio" name="scope" checked={false} onChange={() => {}} /> All pages
+                      <input type="radio" name="scope" checked={scope === 'all'} onChange={() => setScope('all')} /> All pages
                     </label>
                     <label className="inline-flex items-center gap-2 text-sm">
-                      <input type="radio" name="scope" defaultChecked /> Current page
+                      <input type="radio" name="scope" checked={scope === 'current'} onChange={() => setScope('current')} /> Current page
                     </label>
                   </div>
                 </div>
