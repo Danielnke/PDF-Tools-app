@@ -46,6 +46,8 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
   // Editing state (move/resize) for persistent crop
   const [moving, setMoving] = useState<{ page: number; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
   const [resizing, setResizing] = useState<{ page: number; handle: ResizeHandle; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+  const movingRef = useRef<{ page: number; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+  const resizingRef = useRef<{ page: number; handle: ResizeHandle; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
 
   const scaleMapRef = useRef<Record<number, number>>({});
 
@@ -142,26 +144,27 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
     e.stopPropagation();
     const area = cropAreas[page];
     if (!area) return;
-    setMoving({ page, startClientX: e.clientX, startClientY: e.clientY, startArea: area });
+    const payload = { page, startClientX: e.clientX, startClientY: e.clientY, startArea: area };
+    setMoving(payload);
+    movingRef.current = payload;
 
     const onMove = (ev: MouseEvent) => {
-      setMoving(prev => {
-        if (!prev) return null;
-        const s = getScale(page);
-        const dxPx = ev.clientX - prev.startClientX;
-        const dyPx = ev.clientY - prev.startClientY;
-        const dx = dxPx / s;
-        const dy = dyPx / s;
-        const pageMeta = pageInfo.find(p => p.pageNumber === page)!;
-        const next = clampArea({ ...prev.startArea, x: prev.startArea.x + dx, y: prev.startArea.y + dy }, pageMeta);
-        onCropAreaChange(page, next);
-        return { ...prev };
-      });
+      const prev = movingRef.current;
+      if (!prev) return;
+      const s = getScale(page);
+      const dxPx = ev.clientX - prev.startClientX;
+      const dyPx = ev.clientY - prev.startClientY;
+      const dx = dxPx / s;
+      const dy = dyPx / s;
+      const pageMeta = pageInfo.find(p => p.pageNumber === page)!;
+      const next = clampArea({ ...prev.startArea, x: prev.startArea.x + dx, y: prev.startArea.y + dy }, pageMeta);
+      onCropAreaChange(page, next);
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       setMoving(null);
+      movingRef.current = null;
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -172,43 +175,43 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
     e.stopPropagation();
     const area = cropAreas[page];
     if (!area) return;
-    setResizing({ page, handle, startClientX: e.clientX, startClientY: e.clientY, startArea: area });
+    const payload = { page, handle, startClientX: e.clientX, startClientY: e.clientY, startArea: area };
+    setResizing(payload);
+    resizingRef.current = payload;
 
     const onMove = (ev: MouseEvent) => {
-      setResizing(prev => {
-        if (!prev) return null;
-        const s = getScale(page);
-        const dxPx = ev.clientX - prev.startClientX;
-        const dyPx = ev.clientY - prev.startClientY;
-        const dx = dxPx / s;
-        const dy = dyPx / s;
-        const start = prev.startArea;
-        let next: CropArea = { ...start };
-        // Adjust based on handle
-        if (prev.handle.includes("e")) {
-          next.width = Math.max(1, start.width + dx);
-        }
-        if (prev.handle.includes("s")) {
-          next.height = Math.max(1, start.height + dy);
-        }
-        if (prev.handle.includes("w")) {
-          next.x = start.x + dx;
-          next.width = Math.max(1, start.width - dx);
-        }
-        if (prev.handle.includes("n")) {
-          next.y = start.y + dy;
-          next.height = Math.max(1, start.height - dy);
-        }
-        const pageMeta = pageInfo.find(p => p.pageNumber === page)!;
-        next = clampArea(next, pageMeta);
-        onCropAreaChange(page, next);
-        return { ...prev };
-      });
+      const prev = resizingRef.current;
+      if (!prev) return;
+      const s = getScale(page);
+      const dxPx = ev.clientX - prev.startClientX;
+      const dyPx = ev.clientY - prev.startClientY;
+      const dx = dxPx / s;
+      const dy = dyPx / s;
+      const start = prev.startArea;
+      let next: CropArea = { ...start };
+      if (prev.handle.includes("e")) {
+        next.width = Math.max(1, start.width + dx);
+      }
+      if (prev.handle.includes("s")) {
+        next.height = Math.max(1, start.height + dy);
+      }
+      if (prev.handle.includes("w")) {
+        next.x = start.x + dx;
+        next.width = Math.max(1, start.width - dx);
+      }
+      if (prev.handle.includes("n")) {
+        next.y = start.y + dy;
+        next.height = Math.max(1, start.height - dy);
+      }
+      const pageMeta = pageInfo.find(p => p.pageNumber === page)!;
+      next = clampArea(next, pageMeta);
+      onCropAreaChange(page, next);
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       setResizing(null);
+      resizingRef.current = null;
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
