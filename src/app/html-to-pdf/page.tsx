@@ -52,7 +52,8 @@ export default function HtmlToPdfPage() {
       }
       const res = await fetch('/api/convert/html-to-pdf', { method: 'POST', body: form });
       setProgress(80);
-      const data = await res.json();
+      const raw = await res.text();
+      const data = raw ? (() => { try { return JSON.parse(raw); } catch { return { error: raw }; } })() : {};
       if (!res.ok) throw new Error(data.error || 'Conversion failed');
       setResult({ fileName: data.fileName, downloadUrl: data.downloadUrl });
       setProgress(100);
