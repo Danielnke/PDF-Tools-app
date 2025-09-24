@@ -44,8 +44,13 @@ export function PdfViewerContinuous({ file, pageInfo, cropAreas, onCropAreaChang
   const [tempArea, setTempArea] = useState<{ [page: number]: CropArea }>({});
 
   // Editing state (move/resize) for persistent crop
-  const movingRef = useRef<{ page: number; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
-  const resizingRef = useRef<{ page: number; handle: ResizeHandle; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+  const [moving, setMoving] = useState<{ page: number; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+  const movingRef = useRef(moving);
+  movingRef.current = moving;
+
+  const [resizing, setResizing] = useState<{ page: number; handle: ResizeHandle; startClientX: number; startClientY: number; startArea: CropArea } | null>(null);
+  const resizingRef = useRef(resizing);
+  resizingRef.current = resizing;
 
   const scaleMapRef = useRef<Record<number, number>>({});
 
