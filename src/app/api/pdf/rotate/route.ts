@@ -11,7 +11,36 @@ export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
-    const { filePath, angle, pages, originalName } = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let filePath: string | null = null;
+    let angle: number | null = null;
+    let pages: number[] | null = null;
+    let originalName: string | undefined = undefined;
+
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      if (file) {
+        const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
+        await mkdir(uploadDir, { recursive: true });
+        const out = join(uploadDir, `${uuidv4()}.pdf`);
+        await writeFile(out, Buffer.from(await file.arrayBuffer()));
+        filePath = out;
+        originalName = file.name;
+      }
+      const angleField = form.get('angle') as string | null;
+      angle = angleField ? Number(angleField) : null;
+      const pagesField = form.get('pages') as string | null;
+      if (pagesField) {
+        try { pages = JSON.parse(pagesField); } catch { pages = pagesField.split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n)); }
+      }
+    } else {
+      const body = await request.json();
+      filePath = body.filePath;
+      angle = body.angle;
+      pages = body.pages || null;
+      originalName = body.originalName;
+    }
 
     if (!filePath || typeof filePath !== 'string' || filePath.trim() === '' || filePath.includes('undefined')) {
       return withCors(NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 }));

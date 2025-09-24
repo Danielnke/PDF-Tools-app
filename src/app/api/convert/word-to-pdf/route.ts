@@ -47,7 +47,27 @@ export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
-    const { filePath, originalName } = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let filePath: string | null = null;
+    let originalName: string | undefined = undefined;
+
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
+      await mkdir(uploadDir, { recursive: true });
+      if (file) {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        const out = join(uploadDir, `${uuidv4()}.${ext || 'docx'}`);
+        await writeFile(out, Buffer.from(await file.arrayBuffer()));
+        filePath = out;
+        originalName = file.name;
+      }
+    } else {
+      const body = await request.json();
+      filePath = body.filePath;
+      originalName = body.originalName;
+    }
 
     if (!filePath || typeof filePath !== 'string' || filePath.trim() === '' || filePath.includes('undefined')) {
       return withCors(NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 }));
