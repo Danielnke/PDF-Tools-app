@@ -73,6 +73,8 @@ export async function POST(request: NextRequest) {
     browser = await createBrowser();
 
     const page = await browser.newPage();
+    try { await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari'); } catch {}
+    try { await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' }); } catch {}
 
     // Reasonable PDF defaults
     const pdfOptions = {
@@ -83,7 +85,12 @@ export async function POST(request: NextRequest) {
     };
 
     if (mode === 'url' && url) {
-      await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
+      try {
+        await page.goto(url, { waitUntil: ['networkidle0','domcontentloaded'] as any, timeout: 60000 });
+      } catch (navErr) {
+        console.error('Navigation error:', navErr);
+        return withCors(NextResponse.json({ error: 'Failed to load the URL. It may block bots or took too long to respond.' }, { status: 400 }));
+      }
     } else if (htmlString) {
       // Inject <base> if a baseUrl was given for resolving relative paths
       let content = htmlString;
@@ -98,7 +105,12 @@ export async function POST(request: NextRequest) {
         content = content.replace(/<head(\s[^>]*)?>/i, (m) => `${m}\n<base href="${baseUrl}">`);
       }
 
-      await page.setContent(content, { waitUntil: 'networkidle0' });
+      try {
+        await page.setContent(content, { waitUntil: 'networkidle0' });
+      } catch (setErr) {
+        console.error('setContent error:', setErr);
+        return withCors(NextResponse.json({ error: 'Failed to render the provided HTML' }, { status: 400 }));
+      }
     }
 
     const pdfBuffer = await page.pdf(pdfOptions);
@@ -122,7 +134,8 @@ export async function POST(request: NextRequest) {
     }));
   } catch (error) {
     console.error('HTML to PDF error:', error);
-    return withCors(NextResponse.json({ error: 'Failed to convert HTML/URL to PDF' }, { status: 500 }));
+    const msg = error instanceof Error ? error.message : 'Failed to convert HTML/URL to PDF';
+    return withCors(NextResponse.json({ error: msg }, { status: 500 }));
   } finally {
     try { await browser?.close(); } catch {}
   }
