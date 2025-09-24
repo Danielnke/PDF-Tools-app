@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { MainLayout } from '@/components/layout/main-layout';
@@ -100,7 +102,7 @@ export default function HtmlToPdfPage() {
                   <input
                     type="url"
                     placeholder="https://example.com"
-                    value={url}
+                    value={url ?? ''}
                     onChange={(e) => setUrl(e.target.value)}
                     className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
                   />
