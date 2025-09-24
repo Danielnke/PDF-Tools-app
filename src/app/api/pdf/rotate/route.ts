@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         .map((p) => Number(p))
         .filter((p) => Number.isInteger(p) && p >= 1 && p <= totalPages);
       if (targetPages.length === 0) {
-        return NextResponse.json({ error: 'No valid page numbers provided' }, { status: 400 });
+        return withCors(NextResponse.json({ error: 'No valid page numbers provided' }, { status: 400 }));
       }
     } else {
       targetPages = Array.from({ length: totalPages }, (_, i) => i + 1);

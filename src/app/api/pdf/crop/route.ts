@@ -6,6 +6,9 @@ import { tmpdir } from 'os';
 import { PDFCropService, MultiCropOptions } from '@/lib/pdfCrop';
 import { PDFCropValidator } from '@/lib/validation/pdfCrop.validate';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
@@ -28,10 +31,10 @@ export async function POST(request: NextRequest) {
     // Validate file path
     const filePathValidation = PDFCropValidator.validateFilePath(filePath);
     if (!filePathValidation.isValid) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: filePathValidation.errors.join(', ') },
         { status: 400 }
-      );
+      ));
     }
 
     // Validate crop options
@@ -43,10 +46,10 @@ export async function POST(request: NextRequest) {
 
     const validationResult = PDFCropValidator.validateMultiCropOptions(cropOptions);
     if (!validationResult.isValid) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: validationResult.errors.join(', ') },
         { status: 400 }
-      );
+      ));
     }
 
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
@@ -61,10 +64,10 @@ export async function POST(request: NextRequest) {
       // Validate PDF before processing
       const isValid = await cropService.validatePDF(fileBytes);
       if (!isValid) {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: 'Invalid or corrupted PDF file' },
           { status: 400 }
-        );
+        ));
       }
 
       // Get page dimensions for validation
@@ -74,10 +77,10 @@ export async function POST(request: NextRequest) {
       const pageNumbers = cropOptions.crops.map(crop => crop.pageNumber);
       const pageRangeValidation = PDFCropValidator.validatePageRange(pageNumbers, pageDimensions.length);
       if (!pageRangeValidation.isValid) {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: pageRangeValidation.errors.join(', ') },
           { status: 400 }
-        );
+        ));
       }
 
       // Sanitize crop options
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
       console.log('Extracted fileName:', fileName);
       console.log('Extracted dirName:', dirName);
 
-      return NextResponse.json({
+      return withCors(NextResponse.json({
         success: true,
         fileName,
         downloadUrl: `/api/download/${fileName}?dir=${dirName}`,
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
           averageProcessingTime: avgProcessingTime,
           totalProcessingTime,
         },
-      });
+      }));
 
     } catch (error) {
       console.error('PDF cropping error:', error);
@@ -143,10 +146,10 @@ export async function POST(request: NextRequest) {
         errorMessage = error.message;
       }
       
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: errorMessage },
         { status: 500 }
-      );
+      ));
     }
 
   } catch (error) {
@@ -157,10 +160,10 @@ export async function POST(request: NextRequest) {
       errorMessage = error.message;
     }
     
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return withCors(NextResponse.json(
+        { error: errorMessage },
+        { status: 500 }
+      ));
   } finally {
     // Cleanup temporary files (but not the output)
     if (outputDir) {
@@ -176,10 +179,10 @@ export async function GET(request: NextRequest) {
     const filePath = searchParams.get('filePath');
 
     if (!filePath) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'filePath parameter is required' },
         { status: 400 }
-      );
+      ));
     }
 
     const cropService = new PDFCropService();
@@ -187,15 +190,15 @@ export async function GET(request: NextRequest) {
     
     const isValid = await cropService.validatePDF(fileBytes);
     if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid or corrupted PDF file' },
-        { status: 400 }
-      );
+      return withCors(NextResponse.json(
+          { error: 'Invalid or corrupted PDF file' },
+          { status: 400 }
+        ));
     }
 
     const pageDimensions = await cropService.getPageDimensions(fileBytes);
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
       pageCount: pageDimensions.length,
       pageDimensions: pageDimensions.map((dim, index) => ({
@@ -203,7 +206,7 @@ export async function GET(request: NextRequest) {
         width: dim.width,
         height: dim.height,
       })),
-    });
+    }));
 
   } catch (error) {
     console.error('PDF analysis error:', error);
@@ -213,9 +216,9 @@ export async function GET(request: NextRequest) {
       errorMessage = error.message;
     }
     
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return withCors(NextResponse.json(
+        { error: errorMessage },
+        { status: 500 }
+      ));
   }
 }
