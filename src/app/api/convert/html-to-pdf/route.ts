@@ -3,7 +3,8 @@ import { mkdir, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer-core';
+import { createBrowser } from '@/lib/browser';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
 import { withCors, preflight } from '@/lib/api-utils/cors';
 
@@ -20,7 +21,7 @@ function isHttpUrl(value: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  let browser: puppeteer.Browser | null = null;
+  let browser: Browser | null = null;
   try {
     const contentType = request.headers.get('content-type') || '';
 
@@ -69,10 +70,7 @@ export async function POST(request: NextRequest) {
       return withCors(NextResponse.json({ error: 'Invalid URL. Only http/https supported.' }, { status: 400 }));
     }
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    browser = await createBrowser();
 
     const page = await browser.newPage();
 
