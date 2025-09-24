@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate quality parameter
-    if (!['low', 'medium', 'high'].includes(quality)) {
+    if (!quality || !['low', 'medium', 'high'].includes(quality)) {
       return withCors(NextResponse.json(
         { error: 'Quality must be one of: low, medium, high' },
         { status: 400 }
