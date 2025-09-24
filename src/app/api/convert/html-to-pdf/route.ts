@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
 
     if (mode === 'url' && url) {
       try {
-        await page.goto(url, { waitUntil: ['networkidle0','domcontentloaded'] as any, timeout: 60000 });
+        const waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2' = 'networkidle0';
+        await page.goto(url, { waitUntil, timeout: 60000 });
       } catch (navErr) {
         console.error('Navigation error:', navErr);
         return withCors(NextResponse.json({ error: 'Failed to load the URL. It may block bots or took too long to respond.' }, { status: 400 }));
