@@ -5,18 +5,21 @@ import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { PDFDocument, degrees } from 'pdf-lib';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
     const { filePath, angle, pages, originalName } = await request.json();
 
     if (!filePath || typeof filePath !== 'string' || filePath.trim() === '' || filePath.includes('undefined')) {
-      return NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 });
+      return withCors(NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 }));
     }
 
     const allowedAngles = new Set([-270, -180, -90, 90, 180, 270, 0]);
     if (typeof angle !== 'number' || !allowedAngles.has(angle)) {
-      return NextResponse.json({ error: 'Angle must be one of -270, -180, -90, 0, 90, 180, 270' }, { status: 400 });
+      return withCors(NextResponse.json({ error: 'Angle must be one of -270, -180, -90, 0, 90, 180, 270' }, { status: 400 }));
     }
 
     const fileBytes = await readFile(filePath);
@@ -57,20 +60,20 @@ export async function POST(request: NextRequest) {
 
     const dirName = outputDir.split(/[\\/]/).pop() || '';
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
       message: 'PDF rotated successfully',
       fileName: outputFileName,
       filePath: outputPath,
       rotatedPages: targetPages,
       downloadUrl: `/api/download/${outputFileName}?dir=${dirName}`,
-    });
+    }));
   } catch (error) {
     console.error('Rotate error:', error);
     let errorMessage = 'Failed to rotate PDF';
     if (error instanceof Error && (error.message.includes('password') || error.message.includes('encrypted'))) {
       errorMessage = 'Cannot rotate password-protected PDF';
     }
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return withCors(NextResponse.json({ error: errorMessage }, { status: 500 }));
   }
 }
