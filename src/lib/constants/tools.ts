@@ -58,6 +58,17 @@ export const PDF_TOOLS: PDFTool[] = [
     acceptedTypes: [FILE_TYPES.DOCX]
   },
   {
+    id: 'html-to-pdf',
+    title: 'HTML to PDF',
+    description: 'Convert a website URL or HTML file to PDF',
+    icon: 'file-text',
+    href: '/html-to-pdf',
+    features: ['Webpage to PDF', 'HTML file support', 'Print backgrounds'],
+    maxFiles: 1,
+    maxFileSize: MAX_FILE_SIZES.OFFICE,
+    acceptedTypes: [FILE_TYPES.HTML]
+  },
+  {
     id: 'rotate',
     title: 'Rotate PDF',
     description: 'Rotate pages in your PDF document',

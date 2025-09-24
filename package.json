@@ -30,7 +30,8 @@
     "sharp": "^0.34.3",
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "puppeteer": "^22.13.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
