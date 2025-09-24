@@ -13,7 +13,29 @@ export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
   
   try {
-    const { filePath, quality, originalName } = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let filePath: string | null = null;
+    let quality: string | null = null;
+    let originalName: string | undefined = undefined;
+
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
+      await mkdir(uploadDir, { recursive: true });
+      if (file) {
+        const out = join(uploadDir, `${uuidv4()}.pdf`);
+        await writeFile(out, Buffer.from(await file.arrayBuffer()));
+        filePath = out;
+        originalName = file.name;
+      }
+      quality = (form.get('quality') as string) || null;
+    } else {
+      const body = await request.json();
+      filePath = body.filePath;
+      quality = body.quality;
+      originalName = body.originalName;
+    }
 
     if (!filePath || filePath.trim() === '') {
       return withCors(NextResponse.json(

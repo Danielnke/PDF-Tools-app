@@ -5,18 +5,21 @@ export const FILE_TYPES = {
   DOCX: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   XLSX: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   PPTX: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  HTML: 'text/html',
 } as const;
 
 export const FILE_EXTENSIONS = {
   PDF: ['.pdf'],
   IMAGE: ['.jpg', '.jpeg', '.png'],
   OFFICE: ['.docx', '.xlsx', '.pptx'],
+  HTML: ['.html', '.htm'],
 } as const;
 
 export const MAX_FILE_SIZES = {
   PDF: 100 * 1024 * 1024,    // 100MB
   IMAGE: 50 * 1024 * 1024,   // 50MB
   OFFICE: 100 * 1024 * 1024, // 100MB
+  HTML: 20 * 1024 * 1024,    // 20MB
 } as const;
 
 export const PROCESSING_LIMITS = {

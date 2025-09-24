@@ -13,7 +13,8 @@ import {
   RotateCw,
   Eye,
   Zap,
-  Crop 
+  Crop,
+  Globe
 } from "lucide-react";
 
 interface SidebarProps {
@@ -56,6 +57,13 @@ const pdfTools = [
     href: '/word-to-pdf',
     icon: FileText,
     description: 'Convert DOCX to PDF'
+  },
+  {
+    id: 'html-to-pdf',
+    title: 'HTML to PDF',
+    href: '/html-to-pdf',
+    icon: Globe,
+    description: 'Website/HTML to PDF'
   },
   {
     id: 'convert-image',

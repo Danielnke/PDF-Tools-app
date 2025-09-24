@@ -11,7 +11,45 @@ export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
-    const { filePath, splitMode, ranges, pageNumbers, originalName } = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let filePath: string | null = null;
+    let splitMode: string | null = null;
+    let ranges: string[] | null = null;
+    let pageNumbers: number[] | null = null;
+    let originalName: string | undefined = undefined;
+
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const file = (form.get('file') || (form.getAll('files')[0] as any)) as File | null;
+      splitMode = (form.get('splitMode') as string) || null;
+      originalName = file?.name;
+      const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
+      await mkdir(uploadDir, { recursive: true });
+      if (file) {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (ext !== 'pdf') {
+          return withCors(NextResponse.json({ error: 'Only PDF files are supported' }, { status: 400 }));
+        }
+        const out = join(uploadDir, `${uuidv4()}.pdf`);
+        await writeFile(out, Buffer.from(await file.arrayBuffer()));
+        filePath = out;
+      }
+      const rangesField = form.get('ranges') as string | null;
+      const pagesField = form.get('pageNumbers') as string | null;
+      if (rangesField) {
+        try { ranges = JSON.parse(rangesField); } catch { ranges = rangesField.split(',').map(s => s.trim()).filter(Boolean); }
+      }
+      if (pagesField) {
+        try { pageNumbers = JSON.parse(pagesField); } catch { pageNumbers = pagesField.split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n)); }
+      }
+    } else {
+      const body = await request.json();
+      filePath = body.filePath;
+      splitMode = body.splitMode;
+      ranges = body.ranges || null;
+      pageNumbers = body.pageNumbers || null;
+      originalName = body.originalName;
+    }
 
     if (!filePath || filePath.trim() === '' || filePath.includes('undefined')) {
       return withCors(NextResponse.json(

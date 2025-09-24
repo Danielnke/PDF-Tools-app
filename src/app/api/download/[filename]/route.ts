@@ -3,6 +3,9 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { existsSync, readdirSync, Dirent } from 'fs';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function GET(
   request: NextRequest,
@@ -17,18 +20,18 @@ export async function GET(
     console.log('Download request - dir param:', outputDir);
     
     if (!filename) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Filename is required' },
         { status: 400 }
-      );
+      ));
     }
 
     // Security check: prevent directory traversal
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Invalid filename' },
         { status: 400 }
-      );
+      ));
     }
 
     let filePath = null;
@@ -84,10 +87,10 @@ export async function GET(
     }
 
     if (!filePath || !existsSync(filePath)) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'File not found' },
         { status: 404 }
-      );
+      ));
     }
 
     const fileBuffer = await readFile(filePath);
@@ -101,19 +104,19 @@ export async function GET(
       zip: 'application/zip',
     };
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    return withCors(new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentTypes[fileExtension || 'pdf'] || 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-cache',
       },
-    });
+    }));
 
   } catch (error) {
     console.error('Download error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to download file' },
       { status: 500 }
-    );
+    ));
   }
 }

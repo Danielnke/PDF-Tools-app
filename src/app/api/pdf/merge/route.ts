@@ -11,7 +11,38 @@ export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
-    const { files } = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let files: Array<{ filePath: string; originalName: string }> = [];
+
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const incomingFiles = form.getAll('files') as File[];
+      if (!incomingFiles || incomingFiles.length < 2) {
+        return withCors(NextResponse.json(
+          { error: 'At least 2 files are required for merging' },
+          { status: 400 }
+        ));
+      }
+      const uploadDir = join(tmpdir(), 'pdf-tools-uploads', uuidv4());
+      await mkdir(uploadDir, { recursive: true });
+      for (const f of incomingFiles) {
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        if (ext !== 'pdf') {
+          return withCors(NextResponse.json(
+            { error: `Only PDF files are supported. Invalid file: ${f.name}` },
+            { status: 400 }
+          ));
+        }
+        const fileName = `${uuidv4()}.pdf`;
+        const path = join(uploadDir, fileName);
+        const buf = Buffer.from(await f.arrayBuffer());
+        await writeFile(path, buf);
+        files.push({ filePath: path, originalName: f.name });
+      }
+    } else {
+      const body = await request.json();
+      files = body.files || [];
+    }
 
     if (!files || files.length < 2) {
       return withCors(NextResponse.json(
