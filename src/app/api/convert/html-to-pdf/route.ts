@@ -70,7 +70,12 @@ export async function POST(request: NextRequest) {
       return withCors(NextResponse.json({ error: 'Invalid URL. Only http/https supported.' }, { status: 400 }));
     }
 
-    browser = await createBrowser();
+    try {
+      browser = await createBrowser();
+    } catch (launchErr) {
+      console.error('Browser launch failed:', launchErr);
+      return withCors(NextResponse.json({ error: 'Browser unavailable. Provide BROWSER_WS_ENDPOINT env or deploy with serverless Chromium.' }, { status: 500 }));
+    }
 
     const page = await browser.newPage();
     try { await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari'); } catch {}
@@ -113,7 +118,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const pdfBuffer = await page.pdf(pdfOptions);
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await page.pdf(pdfOptions) as unknown as Buffer;
+    } catch (pdfErr) {
+      console.error('PDF generation error:', pdfErr);
+      return withCors(NextResponse.json({ error: 'Failed to generate PDF from the page' }, { status: 500 }));
+    }
 
     const outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
     await mkdir(outputDir, { recursive: true });
