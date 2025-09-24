@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
 import { PDFCompressionService } from '@/lib/pdfCompression';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   let outputDir: string | null = null;
@@ -13,18 +16,18 @@ export async function POST(request: NextRequest) {
     const { filePath, quality, originalName } = await request.json();
 
     if (!filePath || filePath.trim() === '') {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'File path is required and cannot be empty' },
         { status: 400 }
-      );
+      ));
     }
 
     // Validate quality parameter
     if (!['low', 'medium', 'high'].includes(quality)) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Quality must be one of: low, medium, high' },
         { status: 400 }
-      );
+      ));
     }
 
     outputDir = join(tmpdir(), 'pdf-tools-results', uuidv4());
@@ -41,10 +44,10 @@ export async function POST(request: NextRequest) {
       // Validate PDF before processing
       const isValid = await compressionService.validatePDF(fileBytes);
       if (!isValid) {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: 'Invalid or corrupted PDF file' },
           { status: 400 }
-        );
+        ));
       }
 
       // Compress using quality-based settings
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
       await writeFile(outputPath, compressedBytes);
 
       const dirName = outputDir.split(/[\\/]/).pop() || '';
-      return NextResponse.json({
+      return withCors(NextResponse.json({
         message: 'PDF compressed successfully',
         fileName: outputFileName,
         filePath: outputPath,
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
         qualityLevel: result.qualityLevel,
         techniquesApplied: result.techniquesApplied,
         processingTime: result.processingTime,
-      });
+      }));
 
     } catch (compressionError) {
         console.error('Error compressing PDF:', compressionError);
@@ -103,17 +106,17 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: errorMessage },
           { status: statusCode }
-        );
+        ));
     }
   } catch (error) {
     console.error('Error in compression API:', error);
     
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Internal server error during compression' },
       { status: 500 }
-    );
+    ));
   }
 }

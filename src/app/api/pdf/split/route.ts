@@ -5,16 +5,19 @@ import { join, basename } from 'path';
 import { sanitizeBaseName } from '@/lib/api-utils/pdf-helpers';
 import { v4 as uuidv4 } from 'uuid';
 import { tmpdir } from 'os';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
     const { filePath, splitMode, ranges, pageNumbers, originalName } = await request.json();
 
     if (!filePath || filePath.trim() === '' || filePath.includes('undefined')) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Invalid file path provided' },
         { status: 400 }
-      );
+      ));
     }
 
     const fileBytes = await readFile(filePath);
@@ -34,10 +37,10 @@ export async function POST(request: NextRequest) {
       for (const range of ranges) {
         const [start, end] = range.split('-').map(Number);
         if (start < 1 || end > totalPages || start > end) {
-          return NextResponse.json(
+          return withCors(NextResponse.json(
             { error: `Invalid range: ${range}` },
             { status: 400 }
-          );
+          ));
         }
 
         const newPdf = await PDFDocument.create();
@@ -61,10 +64,10 @@ export async function POST(request: NextRequest) {
       
       for (const pageNum of pageNumbersToSplit) {
         if (pageNum < 1 || pageNum > totalPages) {
-          return NextResponse.json(
+          return withCors(NextResponse.json(
             { error: `Invalid page number: ${pageNum}` },
             { status: 400 }
-          );
+          ));
         }
 
         const newPdf = await PDFDocument.create();
@@ -82,10 +85,10 @@ export async function POST(request: NextRequest) {
         });
       }
     } else {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Invalid split mode or missing parameters' },
         { status: 400 }
-      );
+      ));
     }
 
     const files = splitFiles.map(file => ({
@@ -98,20 +101,20 @@ export async function POST(request: NextRequest) {
     
 
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
-      data: { 
+      data: {
         files,
         outputDir: basename(outputDir)
       },
       message: 'PDF split successfully',
-    });
+    }));
 
   } catch (error) {
     console.error('Split error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to split PDF' },
       { status: 500 }
-    );
+    ));
   }
 }

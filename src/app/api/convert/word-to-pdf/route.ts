@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import mammoth from 'mammoth';
 import { PDFDocument, StandardFonts, rgb, PDFFont } from 'pdf-lib';
 import { buildOutputFileName } from '@/lib/api-utils/pdf-helpers';
+import { withCors, preflight } from '@/lib/api-utils/cors';
 
 // Simple text wrapping utility
 function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
@@ -42,16 +43,18 @@ function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: numbe
   return lines;
 }
 
+export async function OPTIONS() { return preflight(); }
+
 export async function POST(request: NextRequest) {
   try {
     const { filePath, originalName } = await request.json();
 
     if (!filePath || typeof filePath !== 'string' || filePath.trim() === '' || filePath.includes('undefined')) {
-      return NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 });
+      return withCors(NextResponse.json({ error: 'Invalid file path provided' }, { status: 400 }));
     }
 
     if (!filePath.toLowerCase().endsWith('.docx')) {
-      return NextResponse.json({ error: 'Only .docx files are supported for conversion' }, { status: 400 });
+      return withCors(NextResponse.json({ error: 'Only .docx files are supported for conversion' }, { status: 400 }));
     }
 
     const fileBuffer = await readFile(filePath);
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
     // Extract raw text from DOCX
     const { value: rawText } = await mammoth.extractRawText({ buffer: fileBuffer });
     if (!rawText || rawText.trim() === '') {
-      return NextResponse.json({ error: 'Could not extract text from the DOCX file' }, { status: 400 });
+      return withCors(NextResponse.json({ error: 'Could not extract text from the DOCX file' }, { status: 400 }));
     }
 
     // Create PDF
@@ -120,16 +123,16 @@ export async function POST(request: NextRequest) {
 
     const dirName = outputDir.split(/[\\/]/).pop() || '';
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       message: 'Converted DOCX to PDF successfully',
       fileName: outputFileName,
       filePath: outputPath,
       downloadUrl: `/api/download/${outputFileName}?dir=${dirName}`,
-    });
+    }));
   } catch (error) {
     console.error('Word to PDF conversion error:', error);
     let errorMessage = 'Failed to convert DOCX to PDF';
     if (error instanceof Error) errorMessage = error.message;
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return withCors(NextResponse.json({ error: errorMessage }, { status: 500 }));
   }
 }

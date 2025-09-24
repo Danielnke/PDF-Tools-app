@@ -3,6 +3,9 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
+import { withCors, preflight } from '@/lib/api-utils/cors';
+
+export async function OPTIONS() { return preflight(); }
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,10 +13,10 @@ export async function POST(request: NextRequest) {
     const files = formData.getAll('files') as File[];
     
     if (!files || files.length === 0) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'No files provided' },
         { status: 400 }
-      );
+      ));
     }
 
     // Validate files
@@ -24,10 +27,10 @@ export async function POST(request: NextRequest) {
 
     if (validFiles.length === 0) {
       const hadLegacyDoc = files.some(f => f.name.toLowerCase().endsWith('.doc'));
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: hadLegacyDoc ? 'Legacy .doc files are not supported. Please convert to .docx and try again.' : 'No valid files provided' },
         { status: 400 }
-      );
+      ));
     }
 
     // Create temporary directory for uploads
@@ -55,17 +58,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       message: 'Files uploaded successfully',
       files: uploadedFiles,
       uploadDir,
-    });
+    }));
 
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to upload files' },
       { status: 500 }
-    );
+    ));
   }
 }
