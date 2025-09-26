@@ -116,7 +116,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] w-64 border-r border-border bg-background transition-transform duration-300 ease-in-out md:translate-x-0",
+          "fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] w-64 border-r border-border bg-background transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -130,7 +130,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 Choose a tool to get started
               </p>
             </div>
-            
+
             <div className="space-y-2">
               {pdfTools.map((tool) => {
                 const IconComponent = tool.icon;
@@ -139,7 +139,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     key={tool.id}
                     href={tool.href}
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface transition-colors group"
-                    onClick={onClose}
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                        onClose();
+                      }
+                    }}
                   >
                     <IconComponent className="h-4 w-4 text-muted group-hover:text-accent transition-colors" />
                     <div className="flex-1">
@@ -151,7 +155,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               })}
             </div>
           </div>
-          
+
           <div className="border-t border-border p-4">
             <div className="flex items-center gap-2 text-sm text-muted">
               <Zap className="h-4 w-4" />
