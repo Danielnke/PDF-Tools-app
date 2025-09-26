@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Globe, FileCode, Upload, Download, CheckCircle, AlertCircle } from 'lucide-react';
-import { usePDF } from 'react-to-pdf';
 
 interface ConvertResult { fileName: string; downloadUrl: string; }
 
@@ -23,8 +22,6 @@ export default function HtmlToPdfPage() {
   const [result, setResult] = useState<ConvertResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Option 2: Capture an on-page element as PDF
-  const { toPDF, targetRef } = usePDF({ filename: 'captured-section.pdf' });
 
   const onDrop = (accepted: File[]) => {
     setError(null);
@@ -149,44 +146,6 @@ export default function HtmlToPdfPage() {
             </CardContent>
           </Card>
 
-          <div className="h-6" />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileCode className="h-5 w-5" /> Convert on-page element to PDF
-              </CardTitle>
-              <CardDescription>
-                Capture any visible element (like a receipt or section) as a PDF using react-to-pdf.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div ref={targetRef} className="rounded-lg border border-border bg-card p-6">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold">Sample Receipt</h2>
-                  <p className="text-sm text-muted-foreground">Order #A1B2C3 • 2025-09-26</p>
-                </div>
-                <div className="divide-y divide-border">
-                  <div className="flex items-center justify-between py-2">
-                    <span>Item A</span>
-                    <span>$12.00</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span>Item B</span>
-                    <span>$8.00</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="font-medium">Total</span>
-                    <span className="font-medium">$20.00</span>
-                  </div>
-                </div>
-                <p className="mt-4 text-xs text-muted-foreground">Note: Text in this PDF will be image-based.</p>
-              </div>
-              <div className="mt-4">
-                <Button onClick={() => toPDF()} className="w-full">Download this section as PDF</Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </MainLayout>
