@@ -116,7 +116,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] w-64 border-r border-border bg-background transition-transform duration-300 ease-in-out",
+          "fixed left-0 top-20 z-50 h-[calc(100vh-5rem)] w-64 border-r border-border bg-background transition-transform duration-300 ease-in-out rounded-t-2xl shadow-lg",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
