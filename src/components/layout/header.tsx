@@ -18,8 +18,8 @@ export function Header({ onMenuToggle, isMobileMenuOpen }: HeaderProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
             onClick={onMenuToggle}
+            aria-label={isMobileMenuOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isMobileMenuOpen ? (
               <X className="h-5 w-5" />
@@ -30,7 +30,7 @@ export function Header({ onMenuToggle, isMobileMenuOpen }: HeaderProps) {
           <FileText className="h-6 w-6 text-accent" />
           <h1 className="text-lg font-semibold">PDF Tools</h1>
         </div>
-        
+
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
