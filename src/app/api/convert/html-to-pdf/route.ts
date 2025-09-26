@@ -91,11 +91,16 @@ export async function POST(request: NextRequest) {
 
     if (mode === 'url' && url) {
       try {
-        const waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2' = 'networkidle0';
-        await page.goto(url, { waitUntil, timeout: 60000 });
+        const waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2' = 'networkidle2';
+        await page.goto(url, { waitUntil, timeout: 90000 });
       } catch (navErr) {
-        console.error('Navigation error:', navErr);
-        return withCors(NextResponse.json({ error: 'Failed to load the URL. It may block bots or took too long to respond.' }, { status: 400 }));
+        console.error('Navigation error (networkidle2):', navErr);
+        try {
+          await page.goto(url, { waitUntil: 'load', timeout: 90000 });
+        } catch (navErr2) {
+          console.error('Navigation retry (load) failed:', navErr2);
+          return withCors(NextResponse.json({ error: 'Failed to load the URL. The site may block headless browsers or took too long to respond.' }, { status: 400 }));
+        }
       }
     } else if (htmlString) {
       // Inject <base> if a baseUrl was given for resolving relative paths
