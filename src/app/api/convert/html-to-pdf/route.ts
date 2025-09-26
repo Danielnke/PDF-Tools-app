@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    await page.emulateMediaType('screen');
     let pdfBuffer: Buffer;
     try {
       pdfBuffer = await page.pdf(pdfOptions) as unknown as Buffer;
