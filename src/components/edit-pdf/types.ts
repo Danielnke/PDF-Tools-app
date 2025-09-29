@@ -1,4 +1,4 @@
-export type ToolType = 'select' | 'text' | 'pen' | 'highlighter' | 'rect';
+export type ToolType = 'select' | 'text' | 'pen' | 'highlighter' | 'rect' | 'redact';
 
 export interface BaseAnnotation {
   id: string;
