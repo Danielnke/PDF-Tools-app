@@ -24,7 +24,6 @@ const TARGET_WIDTH = 720; // display width per page
 
 export default function PdfEditor() {
   const [file, setFile] = useState<File | null>(null);
-  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [viewport, setViewport] = useState<PageViewportInfo[]>([]);
 
@@ -88,7 +87,6 @@ export default function PdfEditor() {
     if (!files.length) return;
     const f = files[0];
     setFile(f);
-    f.arrayBuffer().then(setPdfData).catch(console.error);
   }, []);
 
   const startText = useCallback((page: number, e: React.MouseEvent) => {
@@ -194,9 +192,10 @@ export default function PdfEditor() {
   }, [pushHistory]);
 
   const exportPdf = useCallback(async () => {
-    if (!file || !pdfData) return;
+    if (!file) return;
     const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
-    const orig = await PDFDocument.load(pdfData);
+    const bytesSrc = await file.arrayBuffer();
+    const orig = await PDFDocument.load(bytesSrc);
     const helv = await orig.embedFont(StandardFonts.Helvetica);
     const times = await orig.embedFont(StandardFonts.TimesRoman);
 
@@ -352,9 +351,9 @@ export default function PdfEditor() {
         </div>
       )}
 
-      {file && pdfData && (
+      {file && (
         <div className="mx-auto max-w-5xl px-4 py-10">
-          <Document file={{ data: pdfData }} onLoadSuccess={(info: { numPages: number }) => setNumPages(info.numPages)} loading={<div className="p-6 text-muted-foreground">Loading PDF…</div>}>
+          <Document file={file} onLoadSuccess={(info: { numPages: number }) => setNumPages(info.numPages)} loading={<div className="p-6 text-muted-foreground">Loading PDF…</div>}>
             {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
               <div key={pageNumber} className="relative mx-auto bg-white shadow-sm border border-border rounded-md overflow-hidden mb-8" style={{ width: '100%', maxWidth: TARGET_WIDTH }}>
                 <div className="relative" onDoubleClick={(e) => tool === 'text' && startText(pageNumber, e)}>
@@ -366,7 +365,7 @@ export default function PdfEditor() {
           </Document>
 
           <div className="flex justify-center">
-            <Button variant="outline" onClick={() => { setFile(null); setPdfData(null); setAnnotations({}); setNumPages(0); }}>Choose another PDF</Button>
+            <Button variant="outline" onClick={() => { setFile(null); setAnnotations({}); setNumPages(0); }}>Choose another PDF</Button>
           </div>
         </div>
       )}
