@@ -267,7 +267,7 @@ export default function PdfEditor() {
           const rw = Math.abs(r.w);
           const rh = Math.abs(r.h);
           const ry = (height - ryTop) - rh;
-          page.drawRectangle({ x: rx, y: ry, width: rw, height: rh, color: undefined, borderWidth: r.strokeWidth, borderColor: rgbFromString(a.color), opacity: a.opacity });
+          page.drawRectangle({ x: rx, y: ry, width: rw, height: rh, color: r.filled ? rgbFromString(r.fill || '#ffffff') : undefined, borderWidth: r.strokeWidth, borderColor: rgbFromString(a.color), opacity: a.opacity });
         }
         if (a.type === 'text') {
           const t = a as TextAnnotation;
