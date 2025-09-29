@@ -238,12 +238,8 @@ export default function PdfEditor() {
       }
 
       // Embed raster if any pixels drawn
-      const hasPixels = (() => {
-        const imgData = ctx.getImageData(0,0,1,1).data; // cheap touch
-        return true; // always embed; simpler and safe
-      })();
-
-      if (hasPixels) {
+      const hasStrokes = anns.some(a => a.type === 'pen' || a.type === 'highlighter');
+      if (hasStrokes) {
         const pngBytes = await new Promise<Uint8Array>(resolve => canvas.toBlob(async (blob) => resolve(new Uint8Array(await blob!.arrayBuffer())), 'image/png'));
         const png = await orig.embedPng(pngBytes);
         page.drawImage(png, { x: 0, y: 0, width, height, opacity: 1 });
@@ -253,12 +249,18 @@ export default function PdfEditor() {
       for (const a of anns) {
         if (a.type === 'rect') {
           const r = a as RectAnnotation;
-          page.drawRectangle({ x: Math.min(r.x, r.x + r.w), y: Math.min(r.y, r.y + r.h) * -1 + height, width: Math.abs(r.w), height: Math.abs(r.h), color: undefined, borderWidth: r.strokeWidth, borderColor: rgbFromString(a.color), opacity: a.opacity });
+          const rx = Math.min(r.x, r.x + r.w);
+          const ryTop = Math.min(r.y, r.y + r.h);
+          const rw = Math.abs(r.w);
+          const rh = Math.abs(r.h);
+          const ry = (height - ryTop) - rh;
+          page.drawRectangle({ x: rx, y: ry, width: rw, height: rh, color: undefined, borderWidth: r.strokeWidth, borderColor: rgbFromString(a.color), opacity: a.opacity });
         }
         if (a.type === 'text') {
           const t = a as TextAnnotation;
           const f = t.font === 'Helvetica' ? helv : times;
-          page.drawText(t.text || '', { x: t.x, y: height - t.y - t.h + (t.fontSize*0.2), size: t.fontSize, font: f, color: rgbFromString(t.color), opacity: t.opacity });
+          const ty = (height - t.y) - t.h * 0.8;
+          page.drawText(t.text || '', { x: t.x, y: ty, size: t.fontSize, font: f, color: rgbFromString(t.color), opacity: t.opacity });
         }
       }
     }
