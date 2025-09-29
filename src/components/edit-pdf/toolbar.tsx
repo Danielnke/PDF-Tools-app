@@ -43,6 +43,9 @@ export default function EditorToolbar({ tool, setTool, color, setColor, strokeWi
           <Button size="sm" variant={tool === 'rect' ? 'default' : 'outline'} onClick={() => setTool('rect')} disabled={disabled}>
             <Square className="h-4 w-4" />
           </Button>
+          <Button size="sm" variant={tool === 'redact' ? 'default' : 'outline'} onClick={() => setTool('redact')} disabled={disabled}>
+            <Eraser className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="flex items-center gap-2 pl-2">
