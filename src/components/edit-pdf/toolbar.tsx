@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Highlighter, Type, Square, MoveLeft, MoveRight, Download, Trash2, MousePointer } from 'lucide-react';
+import { Pencil, Highlighter, Type, Square, MoveLeft, MoveRight, Download, Trash2, MousePointer, Eraser } from 'lucide-react';
 import { ToolType } from './types';
 
 interface ToolbarProps {
