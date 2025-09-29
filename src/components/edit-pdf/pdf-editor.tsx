@@ -330,8 +330,14 @@ export default function PdfEditor() {
     };
 
     return (
-      <div className="absolute inset-0" onMouseDown={onOverlayMouseDown} onMouseMove={(e) => handleMouseMove(pageNumber, e)} onMouseUp={handleMouseUp}>
-        <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${info.pdfWidth} ${info.pdfHeight}`} style={{ transform: `scale(${s})`, transformOrigin: 'top left', pointerEvents: 'none' }}>
+      <div className="absolute left-0 top-0 right-0 bottom-0" onMouseDown={onOverlayMouseDown} onMouseMove={(e) => handleMouseMove(pageNumber, e)} onMouseUp={handleMouseUp}>
+        <svg
+          className="absolute left-0 top-0"
+          viewBox={`0 0 ${info.pdfWidth} ${info.pdfHeight}`}
+          width={info.pdfWidth * s}
+          height={info.pdfHeight * s}
+          style={{ pointerEvents: 'none' }}
+        >
           {anns.map(a => {
             if (a.type === 'pen' || a.type === 'highlighter') {
               const p = a as PenAnnotation;
