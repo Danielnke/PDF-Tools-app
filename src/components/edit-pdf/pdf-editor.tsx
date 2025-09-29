@@ -137,14 +137,15 @@ export default function PdfEditor() {
       };
       pushHistory();
       setAnnotations(prev => ({ ...prev, [page]: [...(prev[page] || []), ann] }));
-    } else if (tool === 'rect') {
+    } else if (tool === 'rect' || tool === 'redact') {
       setIsDrawing(true);
       const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
       const xPx = e.clientX - rect.left;
       const yPx = e.clientY - rect.top;
       const { x, yTop } = toPdfPt(page, xPx, yPx);
       const id = uuidv4();
-      const ann: RectAnnotation = { id, page, type: 'rect', x, y: yTop, w: 1, h: 1, opacity: 1, color, z: Date.now(), strokeWidth: Math.max(1, strokeWidth) };
+      const base: RectAnnotation = { id, page, type: 'rect', x, y: yTop, w: 1, h: 1, opacity: 1, color, z: Date.now(), strokeWidth: Math.max(1, strokeWidth) };
+      const ann: RectAnnotation = tool === 'redact' ? { ...base, filled: true, fill: '#ffffff' } : base;
       pushHistory();
       setAnnotations(prev => ({ ...prev, [page]: [...(prev[page] || []), ann] }));
     } else if (tool === 'text') {
@@ -152,26 +153,39 @@ export default function PdfEditor() {
     }
   }, [tool, color, strokeWidth, toPdfPt, startText, pushHistory]);
 
+  const draggingRef = useRef<{ page: number; id: string; startX: number; startY: number; offX: number; offY: number } | null>(null);
+
   const handleMouseMove = useCallback((page: number, e: React.MouseEvent) => {
-    if (!isDrawing) return;
-    const list = annotations[page];
-    if (!list || !list.length) return;
-    const current = list[list.length - 1];
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const xPx = e.clientX - rect.left;
     const yPx = e.clientY - rect.top;
     const { x, yTop } = toPdfPt(page, xPx, yPx);
 
-    if (current.type === 'pen' || current.type === 'highlighter') {
-      const pen = current as PenAnnotation;
-      setAnnotations(prev => ({ ...prev, [page]: [...list.slice(0, -1), { ...pen, points: [...pen.points, { x, y: yTop }] }] }));
-    } else if (current.type === 'rect') {
-      const r = current as RectAnnotation;
-      setAnnotations(prev => ({ ...prev, [page]: [...list.slice(0, -1), { ...r, w: x - r.x, h: yTop - r.y }] }));
+    if (isDrawing) {
+      const list = annotations[page];
+      if (!list || !list.length) return;
+      const current = list[list.length - 1];
+      if (current.type === 'pen' || current.type === 'highlighter') {
+        const pen = current as PenAnnotation;
+        setAnnotations(prev => ({ ...prev, [page]: [...list.slice(0, -1), { ...pen, points: [...pen.points, { x, y: yTop }] }] }));
+      } else if (current.type === 'rect') {
+        const r = current as RectAnnotation;
+        setAnnotations(prev => ({ ...prev, [page]: [...list.slice(0, -1), { ...r, w: x - r.x, h: yTop - r.y }] }));
+      }
+      return;
+    }
+
+    // dragging selected
+    const drag = draggingRef.current;
+    if (drag && drag.page === page) {
+      const dx = x - drag.offX;
+      const dy = yTop - drag.offY;
+      setAnnotations(prev => ({ ...prev, [page]: (prev[page]||[]).map(a => a.id === drag.id ? { ...a, x: drag.startX + dx, y: drag.startY + dy } as any : a) }));
+      return;
     }
   }, [annotations, isDrawing, toPdfPt]);
 
-  const handleMouseUp = useCallback(() => setIsDrawing(false), []);
+  const handleMouseUp = useCallback(() => { setIsDrawing(false); draggingRef.current = null; }, []);
 
   const onTextChange = useCallback((page: number, id: string, text: string) => {
     setAnnotations(prev => ({ ...prev, [page]: (prev[page] || []).map(a => a.id === id && a.type === 'text' ? { ...(a as TextAnnotation), text } : a) }));
@@ -289,8 +303,34 @@ export default function PdfEditor() {
     if (!info) return null;
     const s = info.scale;
 
+    const onOverlayMouseDown = (e: React.MouseEvent) => {
+      if (tool !== 'select') return handleMouseDown(pageNumber, e);
+      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+      const xPx = e.clientX - rect.left;
+      const yPx = e.clientY - rect.top;
+      const { x, yTop } = toPdfPt(pageNumber, xPx, yPx);
+
+      // hit test topmost rect/text
+      const list = [...anns].sort((a,b) => b.z - a.z);
+      const hit = list.find(a => {
+        if (a.type === 'text' || a.type === 'rect') {
+          const ax = a.x, ay = a.y, aw = (a as any).w, ah = (a as any).h || 20;
+          const minX = Math.min(ax, ax + aw); const maxX = Math.max(ax, ax + aw);
+          const minY = Math.min(ay, ay + ah); const maxY = Math.max(ay, ay + ah);
+          return x >= minX && x <= maxX && yTop >= minY && yTop <= maxY;
+        }
+        return false;
+      });
+      if (hit) {
+        setSelected({ page: pageNumber, id: hit.id });
+        draggingRef.current = { page: pageNumber, id: hit.id, startX: (hit as any).x, startY: (hit as any).y, offX: x, offY: yTop };
+      } else {
+        setSelected(null);
+      }
+    };
+
     return (
-      <div className="absolute inset-0" onMouseDown={(e) => handleMouseDown(pageNumber, e)} onMouseMove={(e) => handleMouseMove(pageNumber, e)} onMouseUp={handleMouseUp}>
+      <div className="absolute inset-0" onMouseDown={onOverlayMouseDown} onMouseMove={(e) => handleMouseMove(pageNumber, e)} onMouseUp={handleMouseUp}>
         <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${info.pdfWidth} ${info.pdfHeight}`} style={{ transform: `scale(${s})`, transformOrigin: 'top left', pointerEvents: 'none' }}>
           {anns.map(a => {
             if (a.type === 'pen' || a.type === 'highlighter') {
@@ -300,21 +340,28 @@ export default function PdfEditor() {
             }
             if (a.type === 'rect') {
               const r = a as RectAnnotation;
-              return <rect key={a.id} x={Math.min(r.x, r.x + r.w)} y={Math.min(r.y, r.y + r.h)} width={Math.abs(r.w)} height={Math.abs(r.h)} fill="none" stroke={a.color} strokeWidth={r.strokeWidth} opacity={a.opacity} />;
+              const fill = r.filled ? (r.fill || '#ffffff') : 'none';
+              return <rect key={a.id} x={Math.min(r.x, r.x + r.w)} y={Math.min(r.y, r.y + r.h)} width={Math.abs(r.w)} height={Math.abs(r.h)} fill={fill} stroke={a.color} strokeWidth={r.strokeWidth} opacity={a.opacity} />;
             }
             if (a.type === 'text') {
               const t = a as TextAnnotation;
+              const isSelected = selected && selected.id === t.id && selected.page === pageNumber;
               return (
-                <foreignObject key={a.id} x={t.x} y={t.y} width={Math.max(50, t.w)} height={Math.max(20, t.h)}>
-                  <div style={{ pointerEvents: 'auto' }}>
-                    <input
-                      value={t.text}
-                      onChange={(e) => onTextChange(pageNumber, t.id, e.target.value)}
-                      className="w-full bg-transparent border border-border rounded px-1 text-foreground"
-                      style={{ color: t.color, fontSize: t.fontSize, lineHeight: 1.2 }}
-                    />
-                  </div>
-                </foreignObject>
+                <g key={a.id}>
+                  {isSelected && (
+                    <rect x={t.x-2} y={t.y-2} width={Math.max(50, t.w)+4} height={Math.max(20, t.h)+4} fill="none" stroke="#3b82f6" strokeDasharray="4 2" />
+                  )}
+                  <foreignObject x={t.x} y={t.y} width={Math.max(50, t.w)} height={Math.max(20, t.h)}>
+                    <div style={{ pointerEvents: 'auto' }}>
+                      <input
+                        value={t.text}
+                        onChange={(e) => onTextChange(pageNumber, t.id, e.target.value)}
+                        className="w-full bg-transparent border border-border rounded px-1 text-foreground"
+                        style={{ color: t.color, fontSize: t.fontSize, lineHeight: 1.2 }}
+                      />
+                    </div>
+                  </foreignObject>
+                </g>
               );
             }
             return null;
@@ -322,7 +369,7 @@ export default function PdfEditor() {
         </svg>
       </div>
     );
-  }, [annotations, viewport, handleMouseDown, handleMouseMove, handleMouseUp, onTextChange]);
+  }, [annotations, viewport, handleMouseDown, handleMouseMove, handleMouseUp, onTextChange, selected, tool, toPdfPt]);
 
   return (
     <div className="w-full">
