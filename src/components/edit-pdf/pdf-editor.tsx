@@ -326,24 +326,6 @@ export default function PdfEditor() {
 
   return (
     <div className="w-full">
-      <EditorToolbar
-        tool={tool}
-        setTool={setTool}
-        color={color}
-        setColor={setColor}
-        strokeWidth={strokeWidth}
-        setStrokeWidth={setStrokeWidth}
-        fontSize={fontSize}
-        setFontSize={setFontSize}
-        undo={undo}
-        redo={redo}
-        canUndo={historyRef.current.length > 0}
-        canRedo={futureRef.current.length > 0}
-        onExport={exportPdf}
-        onClear={clearAll}
-        disabled={!file}
-      />
-
       {!file && (
         <div className="mx-auto max-w-3xl px-4 py-10">
           <DragDropZone onFilesSelected={onFilesSelected} acceptedTypes={[FILE_TYPES.PDF]} maxFileSize={MAX_FILE_SIZES.PDF} maxFiles={1} />
@@ -352,7 +334,25 @@ export default function PdfEditor() {
       )}
 
       {file && (
-        <div className="mx-auto max-w-5xl px-4 py-10">
+        <>
+          <EditorToolbar
+            tool={tool}
+            setTool={setTool}
+            color={color}
+            setColor={setColor}
+            strokeWidth={strokeWidth}
+            setStrokeWidth={setStrokeWidth}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
+            undo={undo}
+            redo={redo}
+            canUndo={historyRef.current.length > 0}
+            canRedo={futureRef.current.length > 0}
+            onExport={exportPdf}
+            onClear={clearAll}
+            disabled={false}
+          />
+          <div className="mx-auto max-w-5xl px-4 py-10">
           <Document file={file} onLoadSuccess={(info: { numPages: number }) => setNumPages(info.numPages)} loading={<div className="p-6 text-muted-foreground">Loading PDF…</div>}>
             {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
               <div key={pageNumber} className="relative mx-auto bg-white shadow-sm border border-border rounded-md overflow-hidden mb-8" style={{ width: '100%', maxWidth: TARGET_WIDTH }}>
@@ -368,6 +368,7 @@ export default function PdfEditor() {
             <Button variant="outline" onClick={() => { setFile(null); setAnnotations({}); setNumPages(0); }}>Choose another PDF</Button>
           </div>
         </div>
+        </>
       )}
     </div>
   );
