@@ -353,6 +353,17 @@ export default function PdfEditor() {
         }
         return false;
       });
+
+      if (!hit && mode === 'edit') {
+        const seg = (segments[pageNumber] || []).slice().reverse().find(s => x >= s.x && x <= s.x + s.w && yTop >= s.y && yTop <= s.y + s.h);
+        if (seg) {
+          setSelected({ page: pageNumber, id: seg.id });
+        } else {
+          setSelected(null);
+        }
+        return;
+      }
+
       if (hit) {
         setSelected({ page: pageNumber, id: hit.id });
         draggingRef.current = { page: pageNumber, id: hit.id, startX: (hit as any).x, startY: (hit as any).y, offX: x, offY: yTop };
