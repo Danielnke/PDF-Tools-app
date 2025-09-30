@@ -32,11 +32,13 @@ export default function PdfEditor() {
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [fontSize, setFontSize] = useState(18);
 
+  const [mode, setMode] = useState<'annotate' | 'edit'>('annotate');
   const [annotations, setAnnotations] = useState<Record<number, Annotation[]>>({});
   const [selected, setSelected] = useState<{ page: number; id: string } | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const historyRef = useRef<Annotation[][]>([]);
   const futureRef = useRef<Annotation[][]>([]);
+  const [segments, setSegments] = useState<Record<number, { id: string; x: number; y: number; w: number; h: number; text: string; fontSize: number; edited?: string }[]>>({});
 
   const scaleFor = useCallback((page: number) => {
     const info = viewport.find(v => v.pageNumber === page);
