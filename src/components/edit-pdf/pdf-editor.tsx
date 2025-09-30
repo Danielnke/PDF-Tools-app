@@ -115,7 +115,7 @@ export default function PdfEditor() {
     pushHistory();
     setAnnotations(prev => ({ ...prev, [page]: [...(prev[page] || []), text] }));
     setSelected({ page, id });
-  }, [color, fontSize, pushHistory, toPdfPt]);
+  }, [color, fontSize, pushHistory, toPdfPt, mode]);
 
   const handleMouseDown = useCallback((page: number, e: React.MouseEvent) => {
     if (tool === 'pen' || tool === 'highlighter') {
