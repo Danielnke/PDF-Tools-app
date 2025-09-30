@@ -185,7 +185,7 @@ export default function PdfEditor() {
       setAnnotations(prev => ({ ...prev, [page]: (prev[page]||[]).map(a => a.id === drag.id ? { ...a, x: drag.startX + dx, y: drag.startY + dy } as any : a) }));
       return;
     }
-  }, [annotations, isDrawing, toPdfPt]);
+  }, [annotations, isDrawing, toPdfPt, mode]);
 
   const handleMouseUp = useCallback(() => { setIsDrawing(false); draggingRef.current = null; }, []);
 
