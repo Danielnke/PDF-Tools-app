@@ -294,7 +294,7 @@ export default function PdfEditor() {
     const a = document.createElement('a');
     a.href = url; a.download = `edited_${file.name.replace(/\.[^.]+$/, '')}.pdf`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [annotations, file]);
+  }, [annotations, file, segments]);
 
   // Page load success -> compute scale mapping
   const onPageLoad = useCallback((pageNumber: number, page: any) => {
