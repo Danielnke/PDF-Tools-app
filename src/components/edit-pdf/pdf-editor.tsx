@@ -305,6 +305,22 @@ export default function PdfEditor() {
       next.push({ pageNumber, pdfWidth: vp.width, pdfHeight: vp.height, scale: s });
       return [...next];
     });
+
+    // Extract text segments for edit mode
+    page.getTextContent().then((tc: any) => {
+      const items = tc.items as any[];
+      const segs = items.map((it: any, idx: number) => {
+        const tr = it.transform as number[]; // [a,b,c,d,e,f]
+        const x = tr[4];
+        const yBottom = tr[5];
+        const fontHeight = Math.hypot(tr[1], tr[3]) || it.height || 12;
+        const h = fontHeight;
+        const yTop = vp.height - yBottom - h; // convert bottom->top
+        const w = it.width || (it.str?.length || 1) * (fontHeight * 0.5);
+        return { id: `${pageNumber}-${idx}`, x, y: yTop, w, h, text: it.str || '', fontSize: fontHeight };
+      });
+      setSegments(prev => ({ ...prev, [pageNumber]: segs }));
+    }).catch(() => {});
   }, []);
 
   const renderOverlay = useCallback((pageNumber: number) => {
