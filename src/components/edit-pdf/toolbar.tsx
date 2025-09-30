@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Highlighter, Type, Square, MoveLeft, MoveRight, Download, Trash2, MousePointer, Eraser } from 'lucide-react';
 import { ToolType } from './types';
 
+type Mode = 'annotate' | 'edit';
+
 interface ToolbarProps {
+  mode: Mode;
+  setMode: (m: Mode) => void;
   tool: ToolType;
   setTool: (t: ToolType) => void;
   color: string;
@@ -23,10 +27,14 @@ interface ToolbarProps {
   disabled?: boolean;
 }
 
-export default function EditorToolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fontSize, setFontSize, undo, redo, canUndo, canRedo, onExport, onClear, disabled }: ToolbarProps) {
+export default function EditorToolbar({ mode, setMode, tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fontSize, setFontSize, undo, redo, canUndo, canRedo, onExport, onClear, disabled }: ToolbarProps) {
   return (
     <div className="sticky top-20 z-30 w-full border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto max-w-5xl px-4 py-2 flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant={mode === 'annotate' ? 'default' : 'outline'} onClick={() => setMode('annotate')} disabled={disabled}>Annotate</Button>
+          <Button size="sm" variant={mode === 'edit' ? 'default' : 'outline'} onClick={() => setMode('edit')} disabled={disabled}>Edit</Button>
+        </div>
         <div className="flex items-center gap-1">
           <Button size="sm" variant={tool === 'select' ? 'default' : 'outline'} onClick={() => setTool('select')} disabled={disabled}>
             <MousePointer className="h-4 w-4" />
