@@ -334,7 +334,9 @@ export default function PdfEditor() {
     const s = info.scale;
 
     const onOverlayMouseDown = (e: React.MouseEvent) => {
-      if (tool !== 'select') return handleMouseDown(pageNumber, e);
+      if (mode === 'annotate') {
+        if (tool !== 'select') return handleMouseDown(pageNumber, e);
+      }
       const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
       const xPx = e.clientX - rect.left;
       const yPx = e.clientY - rect.top;
