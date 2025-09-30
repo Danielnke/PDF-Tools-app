@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import EditorToolbar from './toolbar';
-import { Annotation, PageViewportInfo, PenAnnotation, PenPoint, RectAnnotation, TextAnnotation, ToolType } from './types';
+import { Annotation, PageViewportInfo, PenAnnotation, RectAnnotation, TextAnnotation, ToolType } from './types';
 import { DragDropZone } from '@/components/file-upload/drag-drop-zone';
+import { PDFPageProxy, TextContent, TextItem } from 'pdfjs-dist/types/src/display/api';
 import { FILE_TYPES, MAX_FILE_SIZES } from '@/lib/constants/file-types';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
@@ -129,6 +130,8 @@ export default function PdfEditor() {
         id,
         page,
         type: tool,
+        x,
+        y: yTop,
         opacity: tool === 'highlighter' ? 0.35 : 1,
         color,
         z: Date.now(),
@@ -182,24 +185,24 @@ export default function PdfEditor() {
     if (drag && drag.page === page) {
       const dx = x - drag.offX;
       const dy = yTop - drag.offY;
-      setAnnotations(prev => ({ ...prev, [page]: (prev[page]||[]).map(a => a.id === drag.id ? { ...a, x: drag.startX + dx, y: drag.startY + dy } as any : a) }));
+      setAnnotations(prev => ({
+        ...prev,
+        [page]: (prev[page] || []).map(a => {
+          if (a.id === drag.id && (a.type === 'rect' || a.type === 'text')) {
+            return { ...a, x: drag.startX + dx, y: drag.startY + dy };
+          }
+          return a;
+        })
+      }));
       return;
     }
-  }, [annotations, isDrawing, toPdfPt, mode]);
+  }, [annotations, isDrawing, toPdfPt]);
 
   const handleMouseUp = useCallback(() => { setIsDrawing(false); draggingRef.current = null; }, []);
 
   const onTextChange = useCallback((page: number, id: string, text: string) => {
     setAnnotations(prev => ({ ...prev, [page]: (prev[page] || []).map(a => a.id === id && a.type === 'text' ? { ...(a as TextAnnotation), text } : a) }));
   }, []);
-
-  const onDelete = useCallback(() => {
-    if (!selected) return;
-    const { page, id } = selected;
-    pushHistory();
-    setAnnotations(prev => ({ ...prev, [page]: (prev[page] || []).filter(a => a.id !== id) }));
-    setSelected(null);
-  }, [selected, pushHistory]);
 
   const clearAll = useCallback(() => {
     pushHistory();
@@ -209,7 +212,7 @@ export default function PdfEditor() {
 
   const exportPdf = useCallback(async () => {
     if (!file) return;
-    const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+    const { PDFDocument, StandardFonts } = await import('pdf-lib');
     const bytesSrc = await file.arrayBuffer();
     const orig = await PDFDocument.load(bytesSrc);
     const helv = await orig.embedFont(StandardFonts.Helvetica);
@@ -264,8 +267,8 @@ export default function PdfEditor() {
       for (const seg of (segments[pageNum] || []).filter(s => s.edited !== undefined && s.edited !== s.text)) {
         const rx = seg.x;
         const ry = (height - seg.y) - seg.h;
-        page.drawRectangle({ x: rx, y: ry, width: seg.w, height: seg.h, color: rgbFromString('#ffffff') });
-        page.drawText(seg.edited || '', { x: seg.x, y: (height - seg.y) - seg.h * 0.8, size: Math.max(10, seg.h * 0.8), font: helv, color: rgbFromString('#000000') });
+        page.drawRectangle({ x: rx, y: ry, width: seg.w, height: seg.h, color: await rgbFromString('#ffffff') });
+        page.drawText(seg.edited || '', { x: seg.x, y: (height - seg.y) - seg.h * 0.8, size: Math.max(10, seg.h * 0.8), font: helv, color: await rgbFromString('#000000') });
       }
 
       // Draw vector/text on top
@@ -277,19 +280,19 @@ export default function PdfEditor() {
           const rw = Math.abs(r.w);
           const rh = Math.abs(r.h);
           const ry = (height - ryTop) - rh;
-          page.drawRectangle({ x: rx, y: ry, width: rw, height: rh, color: r.filled ? rgbFromString(r.fill || '#ffffff') : undefined, borderWidth: r.strokeWidth, borderColor: rgbFromString(a.color), opacity: a.opacity });
+          page.drawRectangle({ x: rx, y: ry, width: rw, height: rh, color: r.filled ? await rgbFromString(r.fill || '#ffffff') : undefined, borderWidth: r.strokeWidth, borderColor: await rgbFromString(a.color), opacity: a.opacity });
         }
         if (a.type === 'text') {
           const t = a as TextAnnotation;
           const f = t.font === 'Helvetica' ? helv : times;
           const ty = (height - t.y) - t.h * 0.8;
-          page.drawText(t.text || '', { x: t.x, y: ty, size: t.fontSize, font: f, color: rgbFromString(t.color), opacity: t.opacity });
+          page.drawText(t.text || '', { x: t.x, y: ty, size: t.fontSize, font: f, color: await rgbFromString(t.color), opacity: t.opacity });
         }
       }
     }
 
     const bytes = await orig.save();
-    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `edited_${file.name.replace(/\.[^.]+$/, '')}.pdf`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -297,7 +300,7 @@ export default function PdfEditor() {
   }, [annotations, file, segments]);
 
   // Page load success -> compute scale mapping
-  const onPageLoad = useCallback((pageNumber: number, page: any) => {
+  const onPageLoad = useCallback((pageNumber: number, page: PDFPageProxy) => {
     const vp = page.getViewport({ scale: 1 });
     const s = TARGET_WIDTH / vp.width;
     setViewport(prev => {
@@ -307,10 +310,10 @@ export default function PdfEditor() {
     });
 
     // Extract text segments for edit mode
-    page.getTextContent().then((tc: any) => {
-      const items = tc.items as any[];
-      const segs = items.map((it: any, idx: number) => {
-        const tr = it.transform as number[]; // [a,b,c,d,e,f]
+    page.getTextContent().then((tc: TextContent) => {
+      const items = tc.items as TextItem[];
+      const segs = items.map((it, idx) => {
+        const tr = it.transform; // [a,b,c,d,e,f]
         const x = tr[4];
         const yBottom = tr[5];
         const fontHeight = Math.hypot(tr[1], tr[3]) || it.height || 12;
@@ -346,7 +349,8 @@ export default function PdfEditor() {
       const list = [...anns].sort((a,b) => b.z - a.z);
       const hit = list.find(a => {
         if (a.type === 'text' || a.type === 'rect') {
-          const ax = a.x, ay = a.y, aw = (a as any).w, ah = (a as any).h || 20;
+          const rect = a as TextAnnotation | RectAnnotation;
+          const ax = rect.x, ay = rect.y, aw = rect.w, ah = rect.h || 20;
           const minX = Math.min(ax, ax + aw); const maxX = Math.max(ax, ax + aw);
           const minY = Math.min(ay, ay + ah); const maxY = Math.max(ay, ay + ah);
           return x >= minX && x <= maxX && yTop >= minY && yTop <= maxY;
@@ -366,7 +370,8 @@ export default function PdfEditor() {
 
       if (hit) {
         setSelected({ page: pageNumber, id: hit.id });
-        draggingRef.current = { page: pageNumber, id: hit.id, startX: (hit as any).x, startY: (hit as any).y, offX: x, offY: yTop };
+        const rectHit = hit as TextAnnotation | RectAnnotation;
+        draggingRef.current = { page: pageNumber, id: hit.id, startX: rectHit.x, startY: rectHit.y, offX: x, offY: yTop };
       } else {
         setSelected(null);
       }
@@ -492,25 +497,19 @@ export default function PdfEditor() {
   );
 }
 
-function rgbFromString(color: string) {
+async function rgbFromString(color: string) {
+  const { rgb } = await import('pdf-lib');
   // Accept #rrggbb or rgb(r,g,b)
   if (color.startsWith('#')) {
-    const r = parseInt(color.substring(1,3),16)/255;
-    const g = parseInt(color.substring(3,5),16)/255;
-    const b = parseInt(color.substring(5,7),16)/255;
-    return (awaitRgb()).rgb(r,g,b);
+    const r = parseInt(color.substring(1, 3), 16) / 255;
+    const g = parseInt(color.substring(3, 5), 16) / 255;
+    const b = parseInt(color.substring(5, 7), 16) / 255;
+    return rgb(r, g, b);
   }
   const m = color.match(/rgb\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)/i);
   if (m) {
-    const r = parseInt(m[1],10)/255, g = parseInt(m[2],10)/255, b = parseInt(m[3],10)/255;
-    return (awaitRgb()).rgb(r,g,b);
+    const r = parseInt(m[1], 10) / 255, g = parseInt(m[2], 10) / 255, b = parseInt(m[3], 10) / 255;
+    return rgb(r, g, b);
   }
-  return (awaitRgb()).rgb(0,0,0);
-}
-
-function awaitRgb(){
-  // Lazy import pdf-lib's rgb helper
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod = require('pdf-lib');
-  return mod;
+  return rgb(0, 0, 0);
 }
