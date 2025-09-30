@@ -69,6 +69,17 @@ export const PDF_TOOLS: PDFTool[] = [
     acceptedTypes: [FILE_TYPES.HTML]
   },
   {
+    id: 'edit',
+    title: 'Edit PDF',
+    description: 'Annotate or add new text and shapes to your PDF',
+    icon: 'edit-3',
+    href: '/edit-pdf',
+    features: ['Text editing', 'Freehand & highlight', 'Shapes & export'],
+    maxFiles: 1,
+    maxFileSize: MAX_FILE_SIZES.PDF,
+    acceptedTypes: [FILE_TYPES.PDF]
+  },
+  {
     id: 'rotate',
     title: 'Rotate PDF',
     description: 'Rotate pages in your PDF document',
