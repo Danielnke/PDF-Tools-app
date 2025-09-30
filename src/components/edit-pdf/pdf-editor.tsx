@@ -323,6 +323,10 @@ export default function PdfEditor() {
     }).catch(() => {});
   }, []);
 
+  const onTextSegmentChange = useCallback((page: number, id: string, text: string) => {
+    setSegments(prev => ({ ...prev, [page]: (prev[page]||[]).map(s => s.id === id ? { ...s, edited: text } : s) }));
+  }, []);
+
   const renderOverlay = useCallback((pageNumber: number) => {
     const anns = annotations[pageNumber] || [];
     const info = viewport.find(v => v.pageNumber === pageNumber);
