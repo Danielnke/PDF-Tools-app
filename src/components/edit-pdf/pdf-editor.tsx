@@ -452,6 +452,8 @@ export default function PdfEditor() {
       {file && (
         <>
           <EditorToolbar
+            mode={mode}
+            setMode={setMode}
             tool={tool}
             setTool={setTool}
             color={color}
