@@ -438,7 +438,7 @@ export default function PdfEditor() {
         </svg>
       </div>
     );
-  }, [annotations, viewport, handleMouseDown, handleMouseMove, handleMouseUp, onTextChange, selected, tool, toPdfPt]);
+  }, [annotations, viewport, handleMouseDown, handleMouseMove, handleMouseUp, onTextChange, selected, tool, toPdfPt, mode, segments, onTextSegmentChange]);
 
   return (
     <div className="w-full">
