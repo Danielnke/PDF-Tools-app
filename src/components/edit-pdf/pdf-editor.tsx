@@ -117,7 +117,7 @@ export default function PdfEditor() {
     setSelected({ page, id });
   }, [color, fontSize, pushHistory, toPdfPt, mode]);
 
-  const handleMouseDown = useCallback((page: number, e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((page: number, e: React.MouseEvent) => { if (mode !== 'annotate') return;
     if (tool === 'pen' || tool === 'highlighter') {
       setIsDrawing(true);
       const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
