@@ -381,7 +381,27 @@ export default function PdfEditor() {
           height={info.pdfHeight * s}
           style={{ pointerEvents: 'none' }}
         >
-          {anns.map(a => {
+          {mode === 'edit' && (segments[pageNumber] || []).map(seg => {
+            const isSelected = selected && selected.id === seg.id && selected.page === pageNumber;
+            return (
+              <g key={seg.id}>
+                <rect x={seg.x} y={seg.y} width={seg.w} height={seg.h} fill={isSelected ? 'rgba(59,130,246,0.15)' : 'rgba(0,0,0,0.06)'} stroke={isSelected ? '#3b82f6' : 'none'} />
+                {isSelected && (
+                  <foreignObject x={seg.x} y={seg.y} width={seg.w} height={seg.h}>
+                    <div style={{ pointerEvents: 'auto' }}>
+                      <input
+                        value={seg.edited ?? seg.text}
+                        onChange={(e) => onTextSegmentChange(pageNumber, seg.id, e.target.value)}
+                        className="w-full bg-white/90 border border-border rounded px-1 text-foreground"
+                        style={{ fontSize: Math.max(10, seg.h * 0.8) }}
+                      />
+                    </div>
+                  </foreignObject>
+                )}
+              </g>
+            );
+          })}
+          {mode === 'annotate' && anns.map(a => {
             if (a.type === 'pen' || a.type === 'highlighter') {
               const p = a as PenAnnotation;
               const d = p.points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
