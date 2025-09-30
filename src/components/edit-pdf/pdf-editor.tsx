@@ -91,7 +91,7 @@ export default function PdfEditor() {
     setFile(f);
   }, []);
 
-  const startText = useCallback((page: number, e: React.MouseEvent) => {
+  const startText = useCallback((page: number, e: React.MouseEvent) => { if (mode !== 'annotate') return;
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const xPx = e.clientX - rect.left;
     const yPx = e.clientY - rect.top;
