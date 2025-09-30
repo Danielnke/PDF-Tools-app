@@ -260,6 +260,14 @@ export default function PdfEditor() {
         page.drawImage(png, { x: 0, y: 0, width, height, opacity: 1 });
       }
 
+      // Apply edited text segments first (redact then write)
+      for (const seg of (segments[pageNum] || []).filter(s => s.edited !== undefined && s.edited !== s.text)) {
+        const rx = seg.x;
+        const ry = (height - seg.y) - seg.h;
+        page.drawRectangle({ x: rx, y: ry, width: seg.w, height: seg.h, color: rgbFromString('#ffffff') });
+        page.drawText(seg.edited || '', { x: seg.x, y: (height - seg.y) - seg.h * 0.8, size: Math.max(10, seg.h * 0.8), font: helv, color: rgbFromString('#000000') });
+      }
+
       // Draw vector/text on top
       for (const a of anns) {
         if (a.type === 'rect') {
