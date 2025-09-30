@@ -153,7 +153,7 @@ export default function PdfEditor() {
     } else if (tool === 'text') {
       startText(page, e);
     }
-  }, [tool, color, strokeWidth, toPdfPt, startText, pushHistory]);
+  }, [tool, color, strokeWidth, toPdfPt, startText, pushHistory, mode]);
 
   const draggingRef = useRef<{ page: number; id: string; startX: number; startY: number; offX: number; offY: number } | null>(null);
 
