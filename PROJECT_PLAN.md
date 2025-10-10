@@ -54,21 +54,17 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 - **Radix UI** - Accessible UI primitives
 
 ### PDF Processing Libraries
-- **pdf-lib** - Client-side PDF manipulation and creation
-- **react-pdf** - PDF viewing and rendering in React
-- **pdf-poppler** - Server-side PDF processing (Node.js)
-- **pdf2pic** - PDF to image conversion
-- **jsPDF** - PDF generation from scratch
-- **pdf-dist** - PDF.js distribution files for crop tool
+- **pdf-lib** – Client-side PDF editing, annotations, and export
+- **react-pdf** – Rendering and previewing PDFs in React components
+- **@sparticuz/chromium** + **puppeteer** – Headless rendering for HTML-to-PDF workflows
+- **html2canvas** – Canvas capture for annotations and previews
 
 ### File Processing
-- **sharp** - High-performance image processing
-- **mammoth** - Word document (.docx) processing
-- **xlsx** - Excel spreadsheet processing
-- **formidable** - Multipart form data parsing
-- **multer** - File upload middleware
-- **jimp** - Image processing utilities for crop tool
-- **canvas** - Server-side canvas operations
+- **sharp** – High-performance image manipulation in Node
+- **mammoth** – Word (.docx) parsing for Word-to-PDF conversion
+- **xlsx** – Excel file parsing utilities
+- **formidable** – Multipart upload parsing for API routes
+- **uuid** – Unique identifiers for uploaded assets
 
 ### Security & Encryption
 - **crypto** - Built-in Node.js encryption
@@ -139,7 +135,7 @@ src/
 │   │   ├── crop-controls.tsx
 │   │   ├── page-selector.tsx
 │   │   └── crop-preview.tsx
-│   ├── tool-cards/
+���   ├── tool-cards/
 │   │   ├── tool-card.tsx
 │   │   └── tool-grid.tsx
 │   └── common/
