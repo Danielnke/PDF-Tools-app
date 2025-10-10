@@ -135,7 +135,7 @@ src/
 │   │   ├── crop-controls.tsx
 │   │   ├── page-selector.tsx
 │   │   └── crop-preview.tsx
-���   ├── tool-cards/
+│   ├── tool-cards/
 │   │   ├── tool-card.tsx
 │   │   └── tool-grid.tsx
 │   └── common/
@@ -204,32 +204,32 @@ src/
 - [x] Create progress indicators and loading states
 - [x] Set up API routes for file handling
 
-### Phase 3: Core PDF Tools (Days 6-12) 🚧 IN PROGRESS
-- [x] Merge PDF functionality ✅ (Frontend + Backend complete)
-- [x] Split PDF functionality ✅ (Backend API complete, Frontend pending)
-- [x] Compress PDF functionality ✅ (Backend API complete, Frontend pending)
-- [ ] PDF to image conversion
-- [ ] Image to PDF conversion
-- [ ] Basic PDF viewer
+### Phase 3: Core PDF Tools (Days 6-12) ✅ COMPLETED
+- [x] Merge PDF end-to-end flow
+- [x] Split PDF with range parsing UI
+- [x] Compress PDF quality presets
+- [x] Rotate PDF with preview carousel
+- [ ] Crop PDF export polish (carryover)
 
-### Phase 4: Format Conversions (Days 13-17)
-- [ ] PDF to Office formats (Word, Excel, PowerPoint)
-- [ ] Office formats to PDF
-- [ ] Advanced conversion options
+### Phase 4: Format Conversions (Days 13-17) 🚧 IN PROGRESS
+- [x] Word → PDF (DOCX pipeline)
+- [x] HTML/URL → PDF (Puppeteer pipeline)
+- [ ] PDF → Office formats (Word, Excel, PowerPoint)
+- [ ] Office formats → PDF (Excel, PowerPoint)
+- [ ] PDF ↔ Image conversions
 
 ### Phase 5: Advanced Features (Days 18-22)
-- [ ] PDF editing capabilities
-- [ ] Digital signing features
-- [ ] Watermark functionality
-- [ ] Password protection and encryption
-- [ ] Page organization tools
+- [ ] Finalize PDF editing UX and persistence
+- [ ] Digital signing workflows
+- [ ] Watermark tooling
+- [ ] Password protection and unlocking
+- [ ] Page organization and PDF reader
 
 ### Phase 6: Polish & Optimization (Days 23-25)
-- [ ] Performance optimization
-- [ ] Responsive design improvements
-- [ ] Error handling and user feedback
-- [ ] Accessibility features
-- [ ] Cross-browser testing
+- [ ] Performance optimization and worker tuning
+- [ ] Responsive refinements and accessibility audit
+- [ ] Enhanced error handling and retry UX
+- [ ] Cross-browser and device testing
 
 ## 📊 Current Implementation Status
 
