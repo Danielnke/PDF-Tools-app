@@ -37,7 +37,7 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 - ❌ **Sign PDF** – Digital signature tooling
 - ❌ **Watermark PDF** – Add text or image watermarks
 - ❌ **Protect PDF** – Password protection and encryption
-- ❌ **Unlock PDF** �� Remove password protection
+- ❌ **Unlock PDF** – Remove password protection
 - ❌ **PDF Reader** – Dedicated viewer with rich navigation
 
 ## 🛠️ Technology Stack
@@ -97,7 +97,7 @@ src/
 │   │   ├── upload/
 │   │   │   └── route.ts
 │   │   ├── process/
-│   │   │   ├── merge/route.ts
+│   │   ���   ├── merge/route.ts
 │   │   │   ├── split/route.ts
 │   │   │   ├── compress/route.ts
 │   │   │   └── convert/route.ts
@@ -105,7 +105,7 @@ src/
 │   │   │   ├── crop/                # NEW: Crop API endpoints
 │   │   │   │   ├── convert/route.ts     # PDF to images
 │   │   │   │   ├── process/route.ts     # Crop processing
-│   │   ���   │   └── preview/route.ts     # Crop preview
+│   │   │   │   └── preview/route.ts     # Crop preview
 │   │   └── download/
 │   │       └── [fileId]/route.ts
 │   ├── globals.css
@@ -266,21 +266,20 @@ src/
 ## 🎯 Next Steps Priority
 
 ### **Immediate Tasks (High Priority)**
-1. **Create Split PDF frontend page** - Backend API already complete
-2. **Create Compress PDF frontend page** - Backend API already complete
-3. **Implement PDF Crop Tool** - Complete frontend + backend implementation
-4. **Implement PDF to Image conversion** - Backend + frontend
-5. **Implement Image to PDF conversion** - Backend + frontend
+1. Finalize **Crop PDF** export flow (server-side crop + download bundling)
+2. Stabilize **Edit PDF** save/export pipeline and undo/redo history
+3. Ship **PDF ↔ Image conversions** (pdf-lib rasterization, image import pipeline)
+4. Design conversion architecture for **Excel/PowerPoint ↔ PDF** (dependency audit, API contracts)
 
 ### **Medium Priority Tasks**
-5. **PDF Reader/Viewer** - Essential for preview functionality
-6. **Rotate PDF** - Backend + frontend
-7. **PDF to Word conversion** - Backend + frontend
+5. Implement **Organize PDF** (reorder/delete) leveraging existing upload pipeline
+6. Build **PDF Reader** shell with shared preview components
+7. Introduce **Protect/Unlock PDF** workflows (password handling)
 
 ### **Lower Priority Tasks**
-8. **Advanced editing features** (Edit, Sign, Watermark, Protect, Unlock)
-9. **Office format conversions** (Excel, PowerPoint)
-10. **PDF organization tools**
+8. Extend **Format conversions** to full Office suite
+9. Layer in **Digital signing and watermarking** features
+10. Optimize **performance & accessibility** ahead of launch
 
 ## 🚀 Getting Started
 
