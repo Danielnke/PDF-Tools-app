@@ -115,8 +115,8 @@ export default function HtmlToPdfPage() {
                   <input
                     type="url"
                     placeholder="https://example.com"
-                    value={url ?? ''}
-                    onChange={(e) => setUrl(e.target.value)}
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value ?? '')}
                     className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
                   />
                 </div>
