@@ -4,11 +4,12 @@
 A comprehensive PDF tools application similar to "I Love PDF" built with Next.js, featuring a dark theme and modern minimalistic design.
 
 ### Technical Requirements
-- **Framework**: Next.js 14 with App Router and TypeScript
-- **Styling**: Tailwind CSS with dark theme
-- **Architecture**: Server-side rendering (SSR) with client-side PDF processing
+- **Framework**: Next.js 15 (App Router) with TypeScript
+- **Styling**: Tailwind CSS 4 with dark theme support
+- **Architecture**: Hybrid SSR/ISR with client-side PDF processing where appropriate
 - **Theme**: Dark, modern, minimalistic interface
 - **Responsive**: Mobile-first design approach
+- **Runtime Target**: React 19 with concurrent features enabled
 
 ## 📋 Core PDF Tools to Implement
 
@@ -87,7 +88,7 @@ src/
 │   │   ├── crop-pdf/              # NEW: PDF crop tool
 │   │   │   ├── page.tsx
 │   │   │   └── loading.tsx
-│   │   ├── convert/
+��   │   ├── convert/
 │   │   │   ├── pdf-to-word/
 │   │   │   ├── pdf-to-excel/
 │   │   │   ├── pdf-to-image/
@@ -120,7 +121,7 @@ src/
 │   │   ├── progress.tsx
 │   │   └── toast.tsx
 │   ├── layout/
-│   │   ├── header.tsx
+│   ���   ├── header.tsx
 │   │   ├── sidebar.tsx
 │   │   └── footer.tsx
 │   ├── file-upload/
@@ -156,7 +157,7 @@ src/
 │   ├── constants/
 │   │   ├── file-types.ts
 │   │   └── tool-configs.ts
-│   └── utils/
+│   ���── utils/
 │       ├── file-helpers.ts
 │       └── format-helpers.ts
 ├── types/
