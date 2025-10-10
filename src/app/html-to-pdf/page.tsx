@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,10 @@ interface ConvertResult { fileName: string; downloadUrl: string; }
 
 export default function HtmlToPdfPage() {
   const [mode, setMode] = useState<'url' | 'file'>('url');
-  const [url, setUrl] = useState('');
+  const [url, setUrlState] = useState('');
+  const setUrl = useCallback((next: string | null | undefined) => {
+    setUrlState(next ?? '');
+  }, []);
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
