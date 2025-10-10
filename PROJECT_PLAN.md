@@ -14,30 +14,31 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 ## 📋 Core PDF Tools to Implement
 
 ### Document Management
-- [x] **Merge PDF** - Combine multiple PDFs into one document ✅ (Frontend + Backend complete)
-- [x] **Split PDF** - Extract pages or split into multiple files ✅ (FULLY OPERATIONAL - Frontend + Backend complete)
-- [x] **Compress PDF** - Reduce file size while maintaining quality ✅ (Backend API complete, Frontend pending)
-- [ ] **Crop PDF** - Select and crop regions from PDF pages with visual preview and selection tools
-- [ ] **Organize PDF** - Reorder, delete, add pages
-- [ ] **Rotate PDF** - Rotate individual or multiple pages
+- ✅ **Merge PDF** – Combine multiple PDFs into a single document (frontend + backend stable)
+- ✅ **Split PDF** – Extract or batch separate PDFs with page range support
+- ✅ **Compress PDF** – Reduce file size with selectable quality presets
+- 🚧 **Crop PDF** – Interactive cropping with multi-page support (export polish remaining)
+- ❌ **Organize PDF** – Reorder, delete, and insert pages
+- ✅ **Rotate PDF** – Rotate selected pages with preview carousel
 
 ### Format Conversions
-- [ ] **PDF to Word** - Convert PDF to editable Word documents
-- [ ] **PDF to Excel** - Convert PDF tables to Excel spreadsheets
-- [ ] **PDF to PowerPoint** - Convert PDF to PowerPoint presentations
-- [ ] **Word to PDF** - Convert Word documents to PDF
-- [ ] **Excel to PDF** - Convert Excel spreadsheets to PDF
-- [ ] **PowerPoint to PDF** - Convert PowerPoint to PDF
-- [ ] **PDF to JPG/PNG** - Convert PDF pages to image formats
-- [ ] **JPG/PNG to PDF** - Convert images to PDF documents
+- ❌ **PDF to Word** – Convert PDFs to editable Word documents
+- ❌ **PDF to Excel** – Convert PDF tables to Excel spreadsheets
+- ❌ **PDF to PowerPoint** – Convert PDF slides to PowerPoint presentations
+- ✅ **Word to PDF** – Convert Word documents to PDF (DOCX pipeline via mammoth)
+- ❌ **Excel to PDF** – Convert Excel spreadsheets to PDF
+- ❌ **PowerPoint to PDF** – Convert PowerPoint decks to PDF
+- ❌ **PDF to JPG/PNG** – Convert PDF pages to raster image formats
+- ❌ **JPG/PNG to PDF** – Convert images to PDF documents
+- ✅ **HTML to PDF** – Render webpages or HTML files to PDF via Puppeteer
 
 ### Security & Editing
-- [ ] **Edit PDF** - Add text, images, shapes, and annotations
-- [ ] **Sign PDF** - Digital signatures and electronic signing
-- [ ] **Watermark PDF** - Add text or image watermarks
-- [ ] **Protect PDF** - Add password protection and encryption
-- [ ] **Unlock PDF** - Remove password protection
-- [ ] **PDF Reader** - Online PDF viewer with zoom and navigation
+- 🚧 **Edit PDF** – Text annotation, drawing, and rectangle tools (needs persistence refinements)
+- ❌ **Sign PDF** – Digital signature tooling
+- ❌ **Watermark PDF** – Add text or image watermarks
+- ❌ **Protect PDF** – Password protection and encryption
+- ❌ **Unlock PDF** – Remove password protection
+- ❌ **PDF Reader** – Dedicated viewer with rich navigation
 
 ## 🛠️ Technology Stack
 
@@ -88,7 +89,7 @@ src/
 │   │   ├── crop-pdf/              # NEW: PDF crop tool
 │   │   │   ├── page.tsx
 │   │   │   └── loading.tsx
-��   │   ├── convert/
+│   │   ├── convert/
 │   │   │   ├── pdf-to-word/
 │   │   │   ├── pdf-to-excel/
 │   │   │   ├── pdf-to-image/
@@ -121,7 +122,7 @@ src/
 │   │   ├── progress.tsx
 │   │   └── toast.tsx
 │   ├── layout/
-│   ���   ├── header.tsx
+│   │   ├── header.tsx
 │   │   ├── sidebar.tsx
 │   │   └── footer.tsx
 │   ├── file-upload/
@@ -157,7 +158,7 @@ src/
 │   ├── constants/
 │   │   ├── file-types.ts
 │   │   └── tool-configs.ts
-│   ���── utils/
+│   └── utils/
 │       ├── file-helpers.ts
 │       └── format-helpers.ts
 ├── types/
