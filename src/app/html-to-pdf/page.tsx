@@ -107,7 +107,7 @@ export default function HtmlToPdfPage() {
             <CardContent>
               <div className="flex gap-2 mb-4">
                 <Button variant={mode === 'url' ? 'default' : 'outline'} onClick={() => setMode('url')} className="flex-1">From URL</Button>
-                <Button variant={mode === 'file' ? 'default' : 'outline'} onClick={() => setMode('file')} className="flex-1">From HTML File</Button>
+                <Button variant={mode === 'file' ? 'default' : 'outline'} onClick={() => { setMode('file'); setUrl(''); }} className="flex-1">From HTML File</Button>
               </div>
 
               {mode === 'url' ? (
