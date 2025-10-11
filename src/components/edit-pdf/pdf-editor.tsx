@@ -395,7 +395,7 @@ export default function PdfEditor() {
                   <foreignObject x={seg.x} y={seg.y} width={seg.w} height={seg.h}>
                     <div style={{ pointerEvents: 'auto' }}>
                       <input
-                        value={seg.edited ?? seg.text}
+                        value={seg.edited ?? seg.text ?? ''}
                         onChange={(e) => onTextSegmentChange(pageNumber, seg.id, e.target.value)}
                         className="w-full bg-white/90 border border-border rounded px-1 text-foreground"
                         style={{ fontSize: Math.max(10, seg.h * 0.8) }}
@@ -428,7 +428,7 @@ export default function PdfEditor() {
                   <foreignObject x={t.x} y={t.y} width={Math.max(50, t.w)} height={Math.max(20, t.h)}>
                     <div style={{ pointerEvents: 'auto' }}>
                       <input
-                        value={t.text}
+                        value={t.text ?? ''}
                         onChange={(e) => onTextChange(pageNumber, t.id, e.target.value)}
                         className="w-full bg-transparent border border-border rounded px-1 text-foreground"
                         style={{ color: t.color, fontSize: t.fontSize, lineHeight: 1.2 }}

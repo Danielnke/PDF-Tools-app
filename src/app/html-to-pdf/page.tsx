@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,10 @@ interface ConvertResult { fileName: string; downloadUrl: string; }
 
 export default function HtmlToPdfPage() {
   const [mode, setMode] = useState<'url' | 'file'>('url');
-  const [url, setUrl] = useState('');
+  const [url, setUrlState] = useState('');
+  const setUrl = useCallback((next: string | null | undefined) => {
+    setUrlState(next ?? '');
+  }, []);
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -104,7 +107,7 @@ export default function HtmlToPdfPage() {
             <CardContent>
               <div className="flex gap-2 mb-4">
                 <Button variant={mode === 'url' ? 'default' : 'outline'} onClick={() => setMode('url')} className="flex-1">From URL</Button>
-                <Button variant={mode === 'file' ? 'default' : 'outline'} onClick={() => setMode('file')} className="flex-1">From HTML File</Button>
+                <Button variant={mode === 'file' ? 'default' : 'outline'} onClick={() => { setMode('file'); setUrl(''); }} className="flex-1">From HTML File</Button>
               </div>
 
               {mode === 'url' ? (
@@ -112,8 +115,8 @@ export default function HtmlToPdfPage() {
                   <input
                     type="url"
                     placeholder="https://example.com"
-                    value={url ?? ''}
-                    onChange={(e) => setUrl(e.target.value)}
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value ?? '')}
                     className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
                   />
                 </div>

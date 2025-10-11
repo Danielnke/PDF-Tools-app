@@ -4,39 +4,41 @@
 A comprehensive PDF tools application similar to "I Love PDF" built with Next.js, featuring a dark theme and modern minimalistic design.
 
 ### Technical Requirements
-- **Framework**: Next.js 14 with App Router and TypeScript
-- **Styling**: Tailwind CSS with dark theme
-- **Architecture**: Server-side rendering (SSR) with client-side PDF processing
+- **Framework**: Next.js 15 (App Router) with TypeScript
+- **Styling**: Tailwind CSS 4 with dark theme support
+- **Architecture**: Hybrid SSR/ISR with client-side PDF processing where appropriate
 - **Theme**: Dark, modern, minimalistic interface
 - **Responsive**: Mobile-first design approach
+- **Runtime Target**: React 19 with concurrent features enabled
 
 ## 📋 Core PDF Tools to Implement
 
 ### Document Management
-- [x] **Merge PDF** - Combine multiple PDFs into one document ✅ (Frontend + Backend complete)
-- [x] **Split PDF** - Extract pages or split into multiple files ✅ (FULLY OPERATIONAL - Frontend + Backend complete)
-- [x] **Compress PDF** - Reduce file size while maintaining quality ✅ (Backend API complete, Frontend pending)
-- [ ] **Crop PDF** - Select and crop regions from PDF pages with visual preview and selection tools
-- [ ] **Organize PDF** - Reorder, delete, add pages
-- [ ] **Rotate PDF** - Rotate individual or multiple pages
+- ✅ **Merge PDF** – Combine multiple PDFs into a single document (frontend + backend stable)
+- ✅ **Split PDF** – Extract or batch separate PDFs with page range support
+- ✅ **Compress PDF** – Reduce file size with selectable quality presets
+- 🚧 **Crop PDF** – Interactive cropping with multi-page support (export polish remaining)
+- ❌ **Organize PDF** – Reorder, delete, and insert pages
+- ✅ **Rotate PDF** – Rotate selected pages with preview carousel
 
 ### Format Conversions
-- [ ] **PDF to Word** - Convert PDF to editable Word documents
-- [ ] **PDF to Excel** - Convert PDF tables to Excel spreadsheets
-- [ ] **PDF to PowerPoint** - Convert PDF to PowerPoint presentations
-- [ ] **Word to PDF** - Convert Word documents to PDF
-- [ ] **Excel to PDF** - Convert Excel spreadsheets to PDF
-- [ ] **PowerPoint to PDF** - Convert PowerPoint to PDF
-- [ ] **PDF to JPG/PNG** - Convert PDF pages to image formats
-- [ ] **JPG/PNG to PDF** - Convert images to PDF documents
+- ❌ **PDF to Word** – Convert PDFs to editable Word documents
+- ❌ **PDF to Excel** – Convert PDF tables to Excel spreadsheets
+- ❌ **PDF to PowerPoint** – Convert PDF slides to PowerPoint presentations
+- ✅ **Word to PDF** – Convert Word documents to PDF (DOCX pipeline via mammoth)
+- ❌ **Excel to PDF** – Convert Excel spreadsheets to PDF
+- ❌ **PowerPoint to PDF** – Convert PowerPoint decks to PDF
+- ❌ **PDF to JPG/PNG** – Convert PDF pages to raster image formats
+- ❌ **JPG/PNG to PDF** – Convert images to PDF documents
+- ✅ **HTML to PDF** – Render webpages or HTML files to PDF via Puppeteer
 
 ### Security & Editing
-- [ ] **Edit PDF** - Add text, images, shapes, and annotations
-- [ ] **Sign PDF** - Digital signatures and electronic signing
-- [ ] **Watermark PDF** - Add text or image watermarks
-- [ ] **Protect PDF** - Add password protection and encryption
-- [ ] **Unlock PDF** - Remove password protection
-- [ ] **PDF Reader** - Online PDF viewer with zoom and navigation
+- 🚧 **Edit PDF** – Text annotation, drawing, and rectangle tools (needs persistence refinements)
+- ❌ **Sign PDF** – Digital signature tooling
+- ❌ **Watermark PDF** – Add text or image watermarks
+- ❌ **Protect PDF** – Password protection and encryption
+- ❌ **Unlock PDF** – Remove password protection
+- ❌ **PDF Reader** – Dedicated viewer with rich navigation
 
 ## 🛠️ Technology Stack
 
@@ -52,21 +54,17 @@ A comprehensive PDF tools application similar to "I Love PDF" built with Next.js
 - **Radix UI** - Accessible UI primitives
 
 ### PDF Processing Libraries
-- **pdf-lib** - Client-side PDF manipulation and creation
-- **react-pdf** - PDF viewing and rendering in React
-- **pdf-poppler** - Server-side PDF processing (Node.js)
-- **pdf2pic** - PDF to image conversion
-- **jsPDF** - PDF generation from scratch
-- **pdf-dist** - PDF.js distribution files for crop tool
+- **pdf-lib** – Client-side PDF editing, annotations, and export
+- **react-pdf** – Rendering and previewing PDFs in React components
+- **@sparticuz/chromium** + **puppeteer** – Headless rendering for HTML-to-PDF workflows
+- **html2canvas** – Canvas capture for annotations and previews
 
 ### File Processing
-- **sharp** - High-performance image processing
-- **mammoth** - Word document (.docx) processing
-- **xlsx** - Excel spreadsheet processing
-- **formidable** - Multipart form data parsing
-- **multer** - File upload middleware
-- **jimp** - Image processing utilities for crop tool
-- **canvas** - Server-side canvas operations
+- **sharp** – High-performance image manipulation in Node
+- **mammoth** – Word (.docx) parsing for Word-to-PDF conversion
+- **xlsx** – Excel file parsing utilities
+- **formidable** – Multipart upload parsing for API routes
+- **uuid** – Unique identifiers for uploaded assets
 
 ### Security & Encryption
 - **crypto** - Built-in Node.js encryption
@@ -99,7 +97,7 @@ src/
 │   │   ├── upload/
 │   │   │   └── route.ts
 │   │   ├── process/
-│   │   │   ├── merge/route.ts
+│   │   ���   ├── merge/route.ts
 │   │   │   ├── split/route.ts
 │   │   │   ├── compress/route.ts
 │   │   │   └── convert/route.ts
@@ -206,95 +204,82 @@ src/
 - [x] Create progress indicators and loading states
 - [x] Set up API routes for file handling
 
-### Phase 3: Core PDF Tools (Days 6-12) 🚧 IN PROGRESS
-- [x] Merge PDF functionality ✅ (Frontend + Backend complete)
-- [x] Split PDF functionality ✅ (Backend API complete, Frontend pending)
-- [x] Compress PDF functionality ✅ (Backend API complete, Frontend pending)
-- [ ] PDF to image conversion
-- [ ] Image to PDF conversion
-- [ ] Basic PDF viewer
+### Phase 3: Core PDF Tools (Days 6-12) ✅ COMPLETED
+- [x] Merge PDF end-to-end flow
+- [x] Split PDF with range parsing UI
+- [x] Compress PDF quality presets
+- [x] Rotate PDF with preview carousel
+- [ ] Crop PDF export polish (carryover)
 
-### Phase 4: Format Conversions (Days 13-17)
-- [ ] PDF to Office formats (Word, Excel, PowerPoint)
-- [ ] Office formats to PDF
-- [ ] Advanced conversion options
+### Phase 4: Format Conversions (Days 13-17) 🚧 IN PROGRESS
+- [x] Word → PDF (DOCX pipeline)
+- [x] HTML/URL → PDF (Puppeteer pipeline)
+- [ ] PDF → Office formats (Word, Excel, PowerPoint)
+- [ ] Office formats → PDF (Excel, PowerPoint)
+- [ ] PDF ↔ Image conversions
 
 ### Phase 5: Advanced Features (Days 18-22)
-- [ ] PDF editing capabilities
-- [ ] Digital signing features
-- [ ] Watermark functionality
-- [ ] Password protection and encryption
-- [ ] Page organization tools
+- [ ] Finalize PDF editing UX and persistence
+- [ ] Digital signing workflows
+- [ ] Watermark tooling
+- [ ] Password protection and unlocking
+- [ ] Page organization and PDF reader
 
 ### Phase 6: Polish & Optimization (Days 23-25)
-- [ ] Performance optimization
-- [ ] Responsive design improvements
-- [ ] Error handling and user feedback
-- [ ] Accessibility features
-- [ ] Cross-browser testing
+- [ ] Performance optimization and worker tuning
+- [ ] Responsive refinements and accessibility audit
+- [ ] Enhanced error handling and retry UX
+- [ ] Cross-browser and device testing
 
 ## 📊 Current Implementation Status
 
-### ✅ **COMPLETED** Features (16% Complete)
+### ✅ **COMPLETED** Features (≈35% Complete)
 
 **Core Infrastructure:**
-- ✅ Next.js 14 with TypeScript setup
-- ✅ Tailwind CSS dark theme configuration
-- ✅ Responsive design system
-- ✅ File upload/download system
-- ✅ Drag & drop file handling
-- ✅ Progress indicators and loading states
-- ✅ Error handling and user feedback
+- ✅ Next.js 15 + TypeScript foundation with App Router
+- ✅ Tailwind CSS 4 dark design system and responsive layout
+- ✅ Shared file upload/download pipeline with validation and toasts
+- ✅ Progress, loading, and alert feedback patterns
 
-**PDF Tools - Implemented:**
-- ✅ **Merge PDF** - Complete frontend + backend implementation
-- ✅ **Split PDF** - Backend API complete (frontend pending)
-- ✅ **Compress PDF** - Backend API complete (frontend pending)
+**PDF Tools Delivered:**
+- ✅ **Merge PDF** – Fully operational
+- ✅ **Split PDF** – Range parsing UI with download links
+- ✅ **Compress PDF** – Quality presets tied to API
+- ✅ **Rotate PDF** – Page carousel + preview worker
+- ✅ **Word to PDF** – DOCX ingestion with mammoth
+- ✅ **HTML to PDF** – URL/file driven rendering via Puppeteer
 
 ### 🚧 **IN PROGRESS** Features
+- 🔄 **Crop PDF** – Interactive UI complete, export refinement pending
+- 🔄 **Edit PDF** – Annotation tools present, persistence polish required
+- 🔄 **Conversion Expansion** – Planning pipelines for PDF↔Office/Image formats
 
-**Pending Frontend Pages:**
-- 🔄 Split PDF page (API ready)
-- 🔄 Compress PDF page (API ready)
-
-### ⚡ **NOT STARTED** Features (80% Remaining)
-
-**Document Management:**
-- ❌ Organize PDF
-- ❌ Rotate PDF
-
-**Format Conversions:**
-- ❌ PDF to Word, Excel, PowerPoint
-- ❌ Word/Excel/PowerPoint to PDF
-- ❌ PDF to JPG/PNG
-- ❌ JPG/PNG to PDF
-
-**Security & Editing:**
-- ❌ Edit PDF (annotations, text, images)
-- ❌ Sign PDF (digital signatures)
-- ❌ Watermark PDF
-- ❌ Protect PDF (password encryption)
-- ❌ Unlock PDF
-- ❌ PDF Reader (online viewer)
+### ⚡ **NOT STARTED** Features
+- ❌ Organize PDF (reordering, page removal)
+- ❌ PDF to Word/Excel/PowerPoint conversions
+- ❌ Excel/PowerPoint to PDF conversions
+- ❌ PDF ↔ Image conversion suite
+- ❌ Digital signing and watermarking
+- ❌ Protect/Unlock PDF flows
+- ❌ Dedicated PDF reader experience
 
 ## 🎯 Next Steps Priority
 
 ### **Immediate Tasks (High Priority)**
-1. **Create Split PDF frontend page** - Backend API already complete
-2. **Create Compress PDF frontend page** - Backend API already complete
-3. **Implement PDF Crop Tool** - Complete frontend + backend implementation
-4. **Implement PDF to Image conversion** - Backend + frontend
-5. **Implement Image to PDF conversion** - Backend + frontend
+1. Finalize **Crop PDF** export flow (server-side crop + download bundling)
+2. Stabilize **Edit PDF** save/export pipeline and undo/redo history
+3. Ship **PDF ↔ Image conversions** (pdf-lib rasterization, image import pipeline)
+4. Design conversion architecture for **Excel/PowerPoint ↔ PDF** (dependency audit, API contracts)
 
 ### **Medium Priority Tasks**
-5. **PDF Reader/Viewer** - Essential for preview functionality
-6. **Rotate PDF** - Backend + frontend
-7. **PDF to Word conversion** - Backend + frontend
+5. Implement **Organize PDF** (reorder/delete) leveraging existing upload pipeline
+6. Build **PDF Reader** shell with shared preview components
+7. Introduce **Protect/Unlock PDF** workflows (password handling)
 
 ### **Lower Priority Tasks**
-8. **Advanced editing features** (Edit, Sign, Watermark, Protect, Unlock)
-9. **Office format conversions** (Excel, PowerPoint)
-10. **PDF organization tools**
+8. Extend **Format conversions** to full Office suite
+9. Layer in **Digital signing and watermarking** features
+10. Optimize **performance & accessibility** ahead of launch
 
 ## 🚀 Getting Started
 
